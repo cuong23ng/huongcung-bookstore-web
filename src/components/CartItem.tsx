@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { CartItem as CartItemType } from "@/models/Cart";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, Trash2 } from "lucide-react";
@@ -31,26 +32,35 @@ export const CartItem: React.FC<CartItemProps> = ({
   const bookImage = item.book.images?.[0]?.url || "";
   const authors = item.book.authors?.map((a) => a.name).join(", ") || "Unknown Author";
   const formatLabel = item.format === "physical" ? "Sách in" : "E-book";
+  const bookDetailsUrl = `/books/${item.book.code}`;
 
   return (
     <Card className="border border-border">
-      <CardContent className="p-4">
-        <div className="flex gap-4">
+      <CardContent className="px-6 py-4">
+        <div className="flex gap-6">
           {/* Book Cover */}
-          <div className="w-24 h-32 flex-shrink-0">
+          <Link 
+            to={bookDetailsUrl}
+            className="w-32 h-48 flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+          >
             <img
               src={bookImage}
               alt={item.book.title}
               className="w-full h-full object-cover"
             />
-          </div>
+          </Link>
 
           {/* Book Info */}
           <div className="flex-1 flex flex-col justify-between min-w-0">
             <div>
-              <h3 className="text-base font-normal line-clamp-2 mb-1">
-                {item.book.title}
-              </h3>
+              <Link 
+                to={bookDetailsUrl}
+                className="block cursor-pointer hover:text-primary transition-colors"
+              >
+                <h3 className="text-base font-normal line-clamp-2 mb-1">
+                  {item.book.title}
+                </h3>
+              </Link>
               <p className="text-sm text-muted-foreground mb-2">{authors}</p>
               <p className="text-xs text-muted-foreground mb-2">
                 {formatLabel}

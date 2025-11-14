@@ -122,7 +122,6 @@ export const SearchBar = ({ initialQuery = "", onSearch, className = "" }: Searc
   return (
     <div className={`relative w-full ${className}`}>
       <div className="relative flex items-center">
-        <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
         <Input
           ref={inputRef}
           type="text"
@@ -135,7 +134,7 @@ export const SearchBar = ({ initialQuery = "", onSearch, className = "" }: Searc
               setShowSuggestions(true);
             }
           }}
-          className="pl-10 pr-20"
+          className="pl-5 pr-20 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
           aria-label="Search books"
           aria-autocomplete="list"
           aria-expanded={showSuggestions}
@@ -152,14 +151,14 @@ export const SearchBar = ({ initialQuery = "", onSearch, className = "" }: Searc
             <X className="h-4 w-4" />
           </Button>
         )}
-        <Button
+        <button
           onClick={() => handleSearch()}
-          className="absolute right-1 h-8 px-3"
-          size="sm"
+          className="absolute right-1 h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Search"
+          type="button"
         >
-          Tìm
-        </Button>
+          <Search className="h-4 w-4" />
+        </button>
       </div>
 
       {/* Suggestions dropdown */}

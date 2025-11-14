@@ -16,3 +16,19 @@ export type { SearchRequest, SearchResponse, SearchFacet, PaginationInfo } from 
 // Cart models
 export type { Cart, CartItem, CartItemFormat } from './Cart';
 export { calculateCartTotals, calculateItemSubtotal } from './Cart';
+
+// Checkout models
+export type { ShippingAddress, ShippingMethod, ShippingMethodOption, CheckoutFormData } from './Checkout';
+export { SHIPPING_METHODS, getShippingMethod } from './Checkout';
+
+// GHN models
+export type {
+  GhnProvince,
+  GhnDistrict,
+  GhnWard,
+  CalculateFeeRequest,
+  CalculateFeeResponse,
+  CheckoutOrderRequest,
+  CheckoutOrderItem,
+  CheckoutOrderResponse,
+} from './Ghn';

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart, Plus, Minus } from "lucide-react";
+import { Heart, ShoppingCart, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookService } from "@/services/BookService";
 import { BookCard } from "@/components/BookCard";
@@ -12,6 +11,7 @@ import { useColor } from 'color-thief-react';
 import styles from '@/components/BookCard.module.css';
 import { ColorUtils } from "../utils/ColorUtils";
 import { useCart } from "@/contexts/CartContext";
+import { Book as BookModel } from "@/models";
 
 // Mock data - trong thực tế sẽ fetch từ API
 const review_article = {
@@ -101,7 +101,7 @@ Ngôn ngữ trong tác phẩm vừa giản dị vừa đầy chất thơ, phản
   }
 };
 
-type Book = {
+type BookDisplay = {
   id: string;
   title: string;
   authors: { name: string }[];
@@ -124,7 +124,8 @@ export default function BookDetails() {
   const { toast } = useToast();
   const { addItem } = useCart();
   const [isLoading, setIsLoading] = useState(true);
-  const [book, setBook] = useState<Book | null>(null);
+  const [book, setBook] = useState<BookDisplay | null>(null);
+  const [bookModel, setBookModel] = useState<BookModel | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [bgColorScheme, setBgColorScheme] = useState(styles['background-color-olive']);
   const [textColorScheme, setTextColorScheme] = useState(styles['text-color-olive']);
@@ -144,6 +145,9 @@ export default function BookDetails() {
         const bookService = BookService.getInstance();
         const bookData = await bookService.getBookDetails(id);
         if (bookData) {
+          // Store the Book model for cart operations
+          setBookModel(bookData);
+          // Store the local Book type for display
           setBook({
             id: bookData.code,
             title: bookData.title,
@@ -162,10 +166,12 @@ export default function BookDetails() {
           });
         } else {
           setBook(null);
+          setBookModel(null);
         }
       } catch (error) {
         console.error("Error loading book:", error);
         setBook(null);
+        setBookModel(null);
       } finally {
         setIsLoading(false);
       }
@@ -219,19 +225,33 @@ export default function BookDetails() {
   }
 
   const handleAddToCart = () => {
-    if (!book) return;
+    if (!book || !bookModel) return;
 
     // For now, we'll use a default price since Book model doesn't have price
     // In a real implementation, price should come from the API
     const defaultPrice = 0; // TODO: Get actual price from API
     
     // Add physical book to cart (format selection can be added later)
-    addItem(book, "physical", quantity, defaultPrice);
+    // Use bookModel which matches the Book model from @/models
+    addItem(bookModel, "physical", quantity, defaultPrice);
     
     toast({
       title: "Đã thêm vào giỏ hàng",
       description: `"${book.title}" đã được thêm vào giỏ hàng của bạn.`,
     });
+  };
+
+  const handleBuyNow = () => {
+    if (!book || !bookModel) return;
+
+    // First add the item to cart
+    handleAddToCart();
+    
+    // TODO: Navigate to checkout page when it's implemented
+    // navigate("/checkout");
+    
+    // For now, just show a message that checkout will be implemented
+    // Uncomment the navigate line above when checkout page is ready
   };
 
   const handleAddToFavorites = () => {
@@ -384,10 +404,19 @@ export default function BookDetails() {
                   size="lg"
                   variant="secondary"
                   className="flex-1 rounded-none font-normal h-14 px-8 text-base tracking-wide transition-all duration-300 hover:bg-secondary/80 hover:shadow-lg bg-secondary/90"
-                  onClick={handleAddToCart}
+                  onClick={handleBuyNow}
                 >
                   <ShoppingCart className="h-5 w-5 mr-3" />
                   Mua ngay
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="flex-1 rounded-none font-normal h-14 px-8 text-base tracking-wide transition-all duration-300 hover:bg-secondary/80 hover:shadow-lg bg-secondary/90"
+                  onClick={handleAddToCart}
+                >
+                  <ShoppingBag className="h-5 w-5 mr-3" />
+                  Thêm vào giỏ
                 </Button>
                 <Button
                   size="lg"

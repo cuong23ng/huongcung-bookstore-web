@@ -155,9 +155,9 @@ const SearchResults = () => {
       <Header />
       <main className="container mx-auto px-4 py-8">
         {/* Search Bar */}
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <SearchBar initialQuery={query} onSearch={handleSearch} />
-        </div>
+        </div> */}
 
         {/* Filters and Results Layout */}
         <div className="flex gap-6">

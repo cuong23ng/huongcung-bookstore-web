@@ -112,14 +112,6 @@ export default function Cart() {
                 >
                   Tiến hành thanh toán
                 </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full mt-4 rounded-none font-normal"
-                  onClick={() => navigate("/")}
-                >
-                  Tiếp tục mua sắm
-                </Button>
               </CardContent>
             </Card>
           </div>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { CartItem, Cart, CartItemFormat, calculateCartTotals, calculateItemSubtotal } from "@/models/Cart";
+import { CartItem, CartItemFormat, calculateCartTotals, calculateItemSubtotal } from "@/models/Cart";
 import { Book } from "@/models";
 import { CartService } from "@/services/CartService";
 
