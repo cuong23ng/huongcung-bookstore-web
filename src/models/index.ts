@@ -5,7 +5,7 @@ export type { User } from './User';
 export type { AuthResponse, LoginRequest, RegisterRequest } from './Auth';
 
 // Book models
-export type { Book, Author, Translator, Publisher, BookImage } from './Book';
+export type { Book, Author, Translator, Publisher, BookImage, BookFrontPageDTO, AuthorFrontPageDTO, BookPage } from './Book';
 
 // API models
 export type { ApiResponse } from './Api';
@@ -26,6 +26,7 @@ export type {
   GhnProvince,
   GhnDistrict,
   GhnWard,
+  GhnService,
   CalculateFeeRequest,
   CalculateFeeResponse,
   CheckoutOrderRequest,

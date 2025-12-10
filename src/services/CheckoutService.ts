@@ -5,6 +5,7 @@ import {
   GhnProvince,
   GhnDistrict,
   GhnWard,
+  GhnService,
   CalculateFeeRequest,
   CalculateFeeResponse,
   CheckoutOrderRequest,
@@ -114,6 +115,21 @@ export class CheckoutService {
   }
 
   /**
+   * Get GHN services
+   */
+  async getGhnServices(): Promise<GhnService[]> {
+    try {
+      const response = await this.apiFetcher.get<ApiResponse<GhnService[]>>(
+        "/checkout/ghn/services"
+      );
+      return response.data?.data ?? [];
+    } catch (error) {
+      console.error("Failed to fetch GHN services:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get GHN wards for a district
    */
   async getGhnWards(districtId: number): Promise<GhnWard[]> {
@@ -171,7 +187,6 @@ export class CheckoutService {
       return response.data.data;
     } catch (error: any) {
       console.error("Failed to create order:", error);
-      // Extract error message from response
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }

@@ -2,8 +2,13 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
 export class ApiClient  {
   public static create(): AxiosInstance {
+    // Use relative URL in development (via Vite proxy) or full URL in production
+    const baseURL = import.meta.env.MODE === 'development'
+      ? '/api' 
+      : import.meta.env.VITE_API_BASE_URL || 'http://api-dev.huongcungbookstore.com';
+    
     const instance = axios.create({
-      baseURL: 'http://localhost:8082/api',
+      baseURL,
       headers: {
         'Content-Type': 'application/json',
       },

@@ -13,6 +13,12 @@ export interface ShippingAddress {
   wardCode?: string;
 }
 
+export interface CustomerInfo {
+  email: string;
+  fullName: string;
+  phone: string;
+}
+
 /**
  * Shipping method options
  */
@@ -29,11 +35,18 @@ export interface ShippingMethodOption {
 }
 
 /**
+ * Payment method options
+ */
+export type PaymentMethod = "COD" | "VNPAY";
+
+/**
  * Checkout form data
  */
 export interface CheckoutFormData {
   shippingAddress: ShippingAddress;
   shippingMethod: ShippingMethod;
+  customerInfo: CustomerInfo;
+  paymentMethod: PaymentMethod;
   saveAsDefault: boolean;
 }
 

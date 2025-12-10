@@ -11,6 +11,28 @@ import { SearchResponse } from "@/models/Search";
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
+const formatPrice = (price: number): string => {
+  return new Intl.NumberFormat("vi-VN").format(price);
+};
+
+const getDisplayPrice = (physicalPrice: number | null, ebookPrice: number | null): string => {
+  if (physicalPrice === null && ebookPrice === null) {
+    return "Liên hệ";
+  }
+  
+  if (physicalPrice === null && ebookPrice !== null) {
+    return formatPrice(ebookPrice);
+  }
+  
+  if (ebookPrice === null && physicalPrice !== null) {
+    return formatPrice(physicalPrice);
+  }
+  
+  // Both are not null, display the smaller price with "Chỉ từ"
+  const minPrice = Math.min(physicalPrice, ebookPrice);
+  return `Chỉ từ ${formatPrice(minPrice)}`;
+};
+
 const SearchResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -263,15 +285,15 @@ const SearchResults = () => {
               <>
                 {searchResults.books.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                       {searchResults.books.map((book) => (
                         <BookCard
                           key={book.code}
                           id={book.code}
                           title={book.title}
                           authors={book.authors.map((a) => ({ name: a.name }))}
-                          price="0" // Price not available in Book model
-                          image={book.images?.[0]?.url}
+                          price={getDisplayPrice(book.physicalPrice, book.ebookPrice)}
+                          image={book.coverUrl}
                         />
                       ))}
                     </div>

@@ -18,6 +18,12 @@ export interface GhnWard {
   districtId: number;
 }
 
+export interface GhnService {
+  serviceId: number;
+  serviceTypeId: number;
+  shortName: string;
+}
+
 export interface CalculateFeeRequest {
   districtId: number;
   wardCode: string;
@@ -35,6 +41,11 @@ export interface CheckoutOrderRequest {
   items: CheckoutOrderItem[];
   shippingAddress: ShippingAddress;
   shippingMethod?: string;
+  serviceTypeId?: number;
+  email: string;
+  fullName: string;
+  phone: string;
+  paymentMethod?: "COD" | "VNPAY";
 }
 
 export interface CheckoutOrderItem {

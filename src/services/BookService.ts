@@ -1,6 +1,6 @@
 import { ApiClient } from "@/integrations/ApiClient";
 import { AxiosInstance } from "axios";
-import { ApiResponse, Book, BookImage, Translator, Publisher, Author } from "@/models";
+import { ApiResponse, Book, BookPage, BookFrontPageDTO } from "@/models";
 import { SearchRequest, SearchResponse } from "@/models/Search";
 
 export class BookService {
@@ -14,10 +14,29 @@ export class BookService {
     return new BookService();
   }
 
-  async getAllBooks(): Promise<Book[]> {
-    const response = await this.apiFetcher.get<ApiResponse<Book[]>>("/books");
-    const payload = response.data?.data ?? [];
-    return payload;
+  /**
+   * Get all books with pagination
+   * @param page Page number (0-indexed, default: 0)
+   * @param size Page size (default: 20)
+   * @returns Paginated book page
+   */
+  async getAllBooks(page: number = 0, size: number = 20): Promise<BookPage> {
+    const response = await this.apiFetcher.get<ApiResponse<BookPage>>("/books", {
+      params: { page, size },
+    });
+    // Backend returns a list, not a paginated page, so we need to wrap it
+    const books = response.data?.data ?? {
+      books: [],
+      pagination: {
+        currentPage: 0,
+        pageSize: size,
+        totalResults: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrevious: false,
+      },
+    };
+    return books;
   }
 
   async getBookDetails(code: string): Promise<Book | null> {
@@ -31,18 +50,26 @@ export class BookService {
     
     if (request.q) params.append("q", request.q);
     if (request.genre) {
-      request.genre.forEach(g => params.append("genre", g));
+      for (const g of request.genre) {
+        params.append("genre", g);
+      }
     }
     if (request.language) {
-      request.language.forEach(l => params.append("language", l));
+      for (const l of request.language) {
+        params.append("language", l);
+      }
     }
     if (request.format) {
-      request.format.forEach(f => params.append("format", f));
+      for (const f of request.format) {
+        params.append("format", f);
+      }
     }
     if (request.minPrice !== undefined) params.append("minPrice", request.minPrice.toString());
     if (request.maxPrice !== undefined) params.append("maxPrice", request.maxPrice.toString());
     if (request.city) {
-      request.city.forEach(c => params.append("city", c));
+      for (const c of request.city) {
+        params.append("city", c);
+      }
     }
     if (request.page !== undefined) params.append("page", request.page.toString());
     if (request.size !== undefined) params.append("size", request.size.toString());

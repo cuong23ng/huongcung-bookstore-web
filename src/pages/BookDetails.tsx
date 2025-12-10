@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart, Plus, Minus, ShoppingBag } from "lucide-react";
+import { Heart, ShoppingCart, Plus, Minus, ShoppingBag, Book, BookOpen, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -110,12 +110,53 @@ type BookDisplay = {
   description: string;
   details: {
     publisher: string;
-    year: string;
     pages: string;
     language: string;
+    hasPhysicalEdition: boolean;
+    hasElectricEdition: boolean;
     isbn: string;
+    eisbn: string;
+    publicationDate: string;
+    epublicationDate: string;
+    physicalBookPrice: number;
+    ebookPrice: number;
+    coverType: string;
+    specifications: string;
   } | null;
   image?: string;
+};
+
+// Helper function to format date to YYYY-MM-DD format
+const formatDate = (date: Date | string | null | undefined): string => {
+  if (!date) return "";
+  
+  let dateObj: Date;
+  
+  // Convert to Date object
+  if (date instanceof Date) {
+    dateObj = date;
+  } else if (typeof date === 'string') {
+    // If it's already in YYYY-MM-DD format, return as is
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (datePattern.exec(date)) {
+      return date;
+    }
+    // Try to parse the string
+    dateObj = new Date(date);
+    // Check if date is valid
+    if (Number.isNaN(dateObj.getTime())) {
+      return "";
+    }
+  } else {
+    return "";
+  }
+  
+  // Format as YYYY-MM-DD
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
 };
 
 export default function BookDetails() {
@@ -126,7 +167,12 @@ export default function BookDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [book, setBook] = useState<BookDisplay | null>(null);
   const [bookModel, setBookModel] = useState<BookModel | null>(null);
+  const [selectedFormats, setSelectedFormats] = useState<{ physical: boolean; ebook: boolean }>({
+    physical: false,
+    ebook: false,
+  });
   const [quantity, setQuantity] = useState(1);
+  const [ebookDuration, setEbookDuration] = useState('Vô thời hạn');
   const [bgColorScheme, setBgColorScheme] = useState(styles['background-color-olive']);
   const [textColorScheme, setTextColorScheme] = useState(styles['text-color-olive']);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -157,10 +203,18 @@ export default function BookDetails() {
             description: bookData.description || "",
             details: {
               publisher: bookData.publisher?.name || "",
-              year: bookData.publicationDate ? new Date(bookData.publicationDate).getFullYear().toString() : "",
               pages: bookData.pageCount?.toString() || "",
               language: bookData.language || "",
-              isbn: bookData.code || "",
+              hasPhysicalEdition: bookData.physicalBookInfo !== null,
+              hasElectricEdition: bookData.ebookInfo !== null,
+              isbn: bookData.physicalBookInfo?.isbn || "",
+              eisbn: bookData.ebookInfo?.isbn || "",
+              publicationDate: formatDate(bookData.physicalBookInfo?.publicationDate),
+              epublicationDate: formatDate(bookData.ebookInfo?.publicationDate),
+              physicalBookPrice: bookData.physicalBookInfo?.currentPrice || 0,
+              ebookPrice: bookData.ebookInfo?.currentPrice || 0,
+              coverType: bookData.physicalBookInfo?.coverType || "",
+              specifications: bookData.physicalBookInfo?.heightCm?.toString() + " x " + bookData.physicalBookInfo?.widthCm?.toString() + " x " + bookData.physicalBookInfo?.lengthCm?.toString() + " cm" || "",
             },
             image: bookData.images?.[0]?.url,
           });
@@ -178,6 +232,17 @@ export default function BookDetails() {
     };
     load();
   }, [id]);
+
+  // Set default format selection when book is loaded
+  useEffect(() => {
+    if (book?.details) {
+      if (book.details.hasPhysicalEdition) {
+        setSelectedFormats({ physical: true, ebook: false });
+      } else if (book.details.hasElectricEdition) {
+        setSelectedFormats({ physical: false, ebook: true });
+      }
+    }
+  }, [book?.details]);
 
   // Update color scheme when image color is extracted
   useEffect(() => {
@@ -224,16 +289,54 @@ export default function BookDetails() {
     );
   }
 
+  // Helper function to format price
+  const formatPrice = (price: number): string => {
+    return new Intl.NumberFormat("vi-VN").format(price);
+  };
+
+  // Toggle format selection
+  const toggleFormat = (format: 'physical' | 'ebook') => {
+    setSelectedFormats(prev => ({
+      ...prev,
+      [format]: !prev[format],
+    }));
+  };
+
+  // Calculate total price
+  const getTotalPrice = (): number => {
+    if (!book?.details) return 0;
+    let total = 0;
+    if (selectedFormats.physical) {
+      total += (book.details.physicalBookPrice || 0) * quantity;
+    }
+    if (selectedFormats.ebook) {
+      total += book.details.ebookPrice || 0;
+    }
+    return total;
+  };
+
   const handleAddToCart = () => {
     if (!book || !bookModel) return;
 
-    // For now, we'll use a default price since Book model doesn't have price
-    // In a real implementation, price should come from the API
-    const defaultPrice = 0; // TODO: Get actual price from API
-    
-    // Add physical book to cart (format selection can be added later)
-    // Use bookModel which matches the Book model from @/models
-    addItem(bookModel, "physical", quantity, defaultPrice);
+    // Check if any format is selected
+    if (!selectedFormats.physical && !selectedFormats.ebook) {
+      toast({
+        title: "Chưa chọn sản phẩm",
+        description: "Bạn chưa chọn sản phẩm nào",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Add physical book if selected
+    if (selectedFormats.physical && book.details?.physicalBookPrice) {
+      addItem(bookModel, 'physical', quantity, book.details.physicalBookPrice);
+    }
+
+    // Add ebook if selected (convert 'ebook' to 'digital' for CartItemFormat type)
+    if (selectedFormats.ebook && book.details?.ebookPrice) {
+      addItem(bookModel, 'digital', 1, book.details.ebookPrice);
+    }
     
     toast({
       title: "Đã thêm vào giỏ hàng",
@@ -243,6 +346,16 @@ export default function BookDetails() {
 
   const handleBuyNow = () => {
     if (!book || !bookModel) return;
+
+    // Check if any format is selected
+    if (!selectedFormats.physical && !selectedFormats.ebook) {
+      toast({
+        title: "Chưa chọn sản phẩm",
+        description: "Bạn chưa chọn sản phẩm nào",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // First add the item to cart
     handleAddToCart();
@@ -325,10 +438,6 @@ export default function BookDetails() {
               <h1 className="text-5xl font-normal tracking-tight mb-8">{book.title}</h1>
             </div>
 
-            {/* Price */}
-            <div className="mb-5">
-              <p className="text-lg font-bold">{book.price} ₫</p>
-            </div>
 
             {/* Metadata - Two columns */}
             <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
@@ -350,6 +459,18 @@ export default function BookDetails() {
                     <span className="font-normal">{book.details?.publisher || "-"}</span>
                   </p>
                 </div>
+                <div>
+                  <p className="text-sm mb-1">
+                    <span className="font-bold">Ngày xuất bản:</span>{" "}
+                    <span className="font-normal">{book.details?.publicationDate || "-"}</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm mb-1">
+                    <span className="font-bold">ISBN:</span>{" "}
+                    <span className="font-normal">{book.details?.isbn || "-"}</span>
+                  </p>
+                </div>
               </div>
               <div className="space-y-4">
                 <div>
@@ -361,7 +482,19 @@ export default function BookDetails() {
                 <div>
                   <p className="text-sm mb-1">
                     <span className="font-bold">Quy cách:</span>{" "}
-                    <span className="font-normal">15 × 23.5 cm</span>
+                    <span className="font-normal">{book.details?.specifications || "-"}</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm mb-1">
+                    <span className="font-bold">Ngày xuất bản Ebook:</span>{" "}
+                    <span className="font-normal">{book.details?.epublicationDate || "-"}</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm mb-1">
+                    <span className="font-bold">E-ISBN:</span>{" "}
+                    <span className="font-normal">{book.details?.eisbn || "-"}</span>
                   </p>
                 </div>
               </div>
@@ -374,32 +507,115 @@ export default function BookDetails() {
               </p>
             </div>
 
-            {/* Quantity and Add to Cart */}
+            {/* Book Format Selection */}
             <div className="space-y-6 pt-8 border-t border-border">
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-normal text-muted-foreground uppercase tracking-wider">Số lượng:</span>
-                <div className="flex items-center border border-border">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-none"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="px-4 text-base font-normal min-w-[3rem] text-center">{quantity}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-none"
-                    onClick={() => setQuantity(quantity + 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+              {/* Physical Book Option */}
+              {book.details?.hasPhysicalEdition && (
+                <div className="border border-border p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleFormat('physical')}
+                        className="flex-shrink-0"
+                      >
+                        <div className={`w-5 h-5 border-2 border-foreground flex items-center justify-center transition-colors ${
+                          selectedFormats.physical ? 'bg-foreground' : 'bg-transparent'
+                        }`}>
+                          {selectedFormats.physical && <Check className="h-3 w-3 text-background" />}
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-2 flex-1">
+                        <Book className="h-5 w-5" />
+                        <span className="text-base font-normal">Sách giấy</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-normal text-muted-foreground uppercase tracking-wider">Số lượng:</span>
+                        <div className="flex items-center border border-border">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-none"
+                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="px-3 text-sm font-normal min-w-[2rem] text-center">{quantity}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-none"
+                            onClick={() => setQuantity(quantity + 1)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {book.details?.physicalBookPrice ? (
+                        <div>
+                          <p className="text-base font-bold">{formatPrice(book.details.physicalBookPrice)}₫</p>
+                        </div>
+                      ) : (
+                        <p className="text-base text-muted-foreground">Liên hệ</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ebook Option */}
+              {book.details?.hasElectricEdition && (
+                <div className="border border-border p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleFormat('ebook')}
+                        className="flex-shrink-0"
+                      >
+                        <div className={`w-5 h-5 border-2 border-foreground flex items-center justify-center transition-colors ${
+                          selectedFormats.ebook ? 'bg-foreground' : 'bg-transparent'
+                        }`}>
+                          {selectedFormats.ebook && <Check className="h-3 w-3 text-background" />}
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-2 flex-1">
+                        <BookOpen className="h-5 w-5" />
+                        <span className="text-base font-normal">Sách điện tử (ebook)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={ebookDuration}
+                          onChange={(e) => setEbookDuration(e.target.value)}
+                          className="text-sm border border-border bg-background px-3 py-1.5 rounded-none"
+                        >
+                          <option value="Vô thời hạn">Vô thời hạn</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {book.details?.ebookPrice ? (
+                        <p className="text-base font-bold">{formatPrice(book.details.ebookPrice)}₫</p>
+                      ) : (
+                        <p className="text-base text-muted-foreground">Liên hệ</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Total Price */}
+              <div className="pt-4">
+                <div className="flex items-center">
+                  <span className="text-base font-normal mr-2">Thành tiền: </span>
+                  <span className="text-lg font-bold">{formatPrice(getTotalPrice())} ₫</span>
                 </div>
               </div>
 
-              <div className="flex gap-4">
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-4">
                 <Button
                   size="lg"
                   variant="secondary"
@@ -432,42 +648,47 @@ export default function BookDetails() {
         </div>
 
         {/* Book Review Section */}
-        <div className="mb-20">
-          <h2 className="text-xl font-base tracking-wider uppercase mb-8 text-foreground/80">Giới thiệu sách</h2>
-          <Card className="border border-border overflow-hidden">
-            <CardContent className="p-8 md:p-12">
-              <h3 className="text-2xl font-base tracking-wide mb-8">{review_article.title}</h3>
-              <div className="prose prose-base max-w-none">
-                <p className="text-md text-foreground/85 leading-relaxed whitespace-pre-line font-base">
-                  {review_article.content}
-                </p>
-              </div>
-              
-              
-              {review_article.sources && review_article.sources.length > 0 && (
-                <div className="mt-12 pt-8 border-t border-border">
-                  <h4 className="text-sm font-normal mb-4 text-foreground/70 uppercase tracking-wider">
-                    Nguồn tham khảo
-                  </h4>
-                  <ul className="space-y-2">
-                    {review_article.sources.map((source: any, index: number) => (
-                      <li key={`source-${index}`} className="text-sm">
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-foreground/80 hover:text-foreground transition-colors underline"
-                        >
-                          {source.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+        {bookModel?.review?.content && (
+          <div className="mb-20">
+            <h2 className="text-xl font-base tracking-wider uppercase mb-8 text-foreground/80">Giới thiệu sách</h2>
+            <Card className="border border-border overflow-hidden">
+              <CardContent className="p-8 md:p-12">
+                {bookModel.review.title && (
+                  <h3 className="text-2xl font-semibold mb-6 text-foreground">
+                    {bookModel.review.title}
+                  </h3>
+                )}
+                <div className="prose prose-base max-w-none">
+                  <p className="text-md text-foreground/85 leading-relaxed whitespace-pre-line font-base">
+                    {bookModel.review.content}
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                
+                {bookModel.review.sources && bookModel.review.sources.length > 0 && (
+                  <div className="mt-12 pt-8 border-t border-border">
+                    <h4 className="text-sm font-normal mb-4 text-foreground/70 uppercase tracking-wider">
+                      Nguồn tham khảo
+                    </h4>
+                    <ul className="space-y-2">
+                      {bookModel.review.sources.map((source, index: number) => (
+                        <li key={`source-${index}`} className="text-sm">
+                          <a 
+                            href={source.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-foreground/80 hover:text-foreground underline"
+                          >
+                            {source.title}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Related Products */}
         <div className="mb-20">

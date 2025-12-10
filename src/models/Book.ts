@@ -29,20 +29,76 @@ export interface Publisher {
   website?: string;
 }
 
+export interface PhysicalBookInformation {
+  isbn: string;
+  publicationDate?: Date | null; 
+  coverType: string;
+  weightGrams: number;
+  heightCm: number;
+  widthCm: number;
+  lengthCm: number;
+  currentPrice: number;
+}
+
+export interface EbookInformation {
+  isbn: string;
+  publicationDate?: Date | null; 
+  currentPrice: number;
+}
+
+export interface ReviewSource {
+  title: string;
+  url: string;
+}
+
+export interface BookReview {
+  title?: string;
+  content?: string;
+  sources?: ReviewSource[];
+}
+
 export interface Book {
   code: string;
   title: string;
   authors: Author[];
   translators: Translator[];
   edition?: number;
-  publisher?: Publisher | null;
-  publicationDate?: Date | null; // yyyy-MM-dd
+  publisher?: Publisher | null;// yyyy-MM-dd
   language?: string | null;
   pageCount?: number;
   description?: string;
   images: BookImage[];
-  hasPhysicalEdition: boolean;
-  hasElectricEdition: boolean;
+  physicalBookInfo?: PhysicalBookInformation;
+  ebookInfo?: EbookInformation;
+  review?: BookReview;
+}
+
+export interface AuthorFrontPageDTO {
+  name: string;
+}
+
+export interface BookFrontPageDTO {
+  code: string;
+  title: string;
+  coverUrl?: string;
+  physicalPrice: number | null;
+  ebookPrice: number | null;
+  authors: AuthorFrontPageDTO[];
+}
+
+export interface BookPage {
+  books: BookFrontPageDTO[];
+  pagination: PaginationInfo;
+  executionTimeMs?: number;
+}
+
+export interface PaginationInfo {
+  currentPage: number;
+  pageSize: number;
+  totalResults: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 

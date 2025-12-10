@@ -1,4 +1,4 @@
-import { Book } from "./Book";
+import { BookFrontPageDTO } from "./Book";
 
 export interface SearchFacet {
   value: string;
@@ -15,7 +15,7 @@ export interface PaginationInfo {
 }
 
 export interface SearchResponse {
-  books: Book[];
+  books: BookFrontPageDTO[];
   facets: {
     [key: string]: SearchFacet[];
   };

@@ -12,15 +12,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { CartItem } from "@/components/CartItem";
 import { useCart } from "@/contexts/CartContext";
-import { CheckoutFormData, ShippingAddress, SHIPPING_METHODS, getShippingMethod } from "@/models";
-import { GhnProvince, GhnDistrict, GhnWard } from "@/models";
+import { CheckoutFormData } from "@/models";
+import { GhnProvince, GhnDistrict, GhnWard, GhnService } from "@/models";
 import { CheckoutService } from "@/services/CheckoutService";
+import { PaymentService } from "@/services/PaymentService";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, CreditCard, Wallet } from "lucide-react";
+import { CheckoutLineItem } from "@/components/CheckoutLineItem";
 
 const checkoutService = CheckoutService.getInstance();
+const paymentService = PaymentService.getInstance();
 
 // Zod schema for shipping address validation with GHN fields
 const shippingAddressSchema = z.object({
@@ -42,17 +44,27 @@ const shippingAddressSchema = z.object({
   }
 );
 
+const customerInfoSchema = z.object({
+  email: z.string().email({ message: "Email không hợp lệ" }).min(1, { message: "Email là bắt buộc" }),
+  fullName: z.string().optional(),
+  phone: z.string().optional(),
+});
+
 const checkoutFormSchema = z.object({
   shippingAddress: shippingAddressSchema,
+  customerInfo: customerInfoSchema,
   shippingMethod: z.enum(["standard", "express"], {
     required_error: "Vui lòng chọn phương thức vận chuyển",
+  }),
+  paymentMethod: z.enum(["COD", "VNPAY"], {
+    required_error: "Vui lòng chọn phương thức thanh toán",
   }),
   saveAsDefault: z.boolean().default(false),
 });
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { items, subtotal, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, subtotal, clearCart } = useCart();
   const { toast } = useToast();
   const [shippingCost, setShippingCost] = useState(0);
   
@@ -60,11 +72,14 @@ export default function Checkout() {
   const [provinces, setProvinces] = useState<GhnProvince[]>([]);
   const [districts, setDistricts] = useState<GhnDistrict[]>([]);
   const [wards, setWards] = useState<GhnWard[]>([]);
+  const [services, setServices] = useState<GhnService[]>([]);
+  const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<number | undefined>(undefined);
   
   // Loading states
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
+  const [loadingServices, setLoadingServices] = useState(false);
   const [calculatingFee, setCalculatingFee] = useState(false);
   const [ghnApiAvailable, setGhnApiAvailable] = useState(true);
 
@@ -85,18 +100,25 @@ export default function Checkout() {
         districtId: undefined,
         wardCode: "",
       },
+      customerInfo: {
+        email: "",
+        fullName: "",
+        phone: "",
+      },
       shippingMethod: "standard",
+      paymentMethod: "COD",
       saveAsDefault: false,
     },
   });
 
   const shippingMethod = watch("shippingMethod");
+  const paymentMethod = watch("paymentMethod");
   const saveAsDefault = watch("saveAsDefault");
   const selectedProvinceId = watch("shippingAddress.provinceId");
   const selectedDistrictId = watch("shippingAddress.districtId");
   const selectedWardCode = watch("shippingAddress.wardCode");
 
-  // Load provinces on mount
+  // Load provinces and services on mount
   useEffect(() => {
     const loadProvinces = async () => {
       setLoadingProvinces(true);
@@ -116,10 +138,35 @@ export default function Checkout() {
         setLoadingProvinces(false);
       }
     };
+
+    const loadServices = async () => {
+      setLoadingServices(true);
+      try {
+        const data = await checkoutService.getGhnServices();
+        // Filter out services with invalid serviceTypeId
+        const validServices = data.filter(s => s.serviceTypeId != null);
+        setServices(validServices);
+        console.log(validServices);
+        // Set default service if available
+        if (validServices.length > 0) {
+          setSelectedServiceTypeId(validServices[0].serviceTypeId);
+        }
+      } catch (error) {
+        console.error("Failed to load services:", error);
+        toast({
+          title: "Cảnh báo",
+          description: "Không thể tải danh sách phương thức vận chuyển.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingServices(false);
+      }
+    };
     
     if (ghnApiAvailable) {
       loadProvinces();
     }
+    loadServices();
   }, [ghnApiAvailable, toast]);
 
   // Load districts when province is selected
@@ -180,12 +227,7 @@ export default function Checkout() {
 
   // Calculate delivery fee when ward is selected
   useEffect(() => {
-    if (!selectedWardCode || !selectedDistrictId || !ghnApiAvailable) {
-      // Use default shipping method cost if GHN unavailable
-      if (shippingMethod) {
-        const method = getShippingMethod(shippingMethod);
-        setShippingCost(method.cost);
-      }
+    if (!selectedWardCode || !selectedDistrictId || !ghnApiAvailable || !selectedServiceTypeId) {
       return;
     }
     
@@ -201,24 +243,20 @@ export default function Checkout() {
           districtId: selectedDistrictId,
           wardCode: selectedWardCode,
           weight: totalWeight,
-          serviceTypeId: shippingMethod === "express" ? 1 : 2,
+          serviceTypeId: selectedServiceTypeId,
         });
         
         setShippingCost(feeResponse.total);
       } catch (error) {
         console.error("Failed to calculate delivery fee:", error);
-        // Fallback to default shipping method cost
-        if (shippingMethod) {
-          const method = getShippingMethod(shippingMethod);
-          setShippingCost(method.cost);
-        }
+        setShippingCost(0);
       } finally {
         setCalculatingFee(false);
       }
     };
     
     calculateFee();
-  }, [selectedWardCode, selectedDistrictId, shippingMethod, items, ghnApiAvailable]);
+  }, [selectedWardCode, selectedDistrictId, selectedServiceTypeId, items, ghnApiAvailable]);
 
   // Load saved form data on mount
   useEffect(() => {
@@ -265,11 +303,40 @@ export default function Checkout() {
         items: orderItems,
         shippingAddress: data.shippingAddress,
         shippingMethod: data.shippingMethod,
+        serviceTypeId: selectedServiceTypeId,
+        email: data.customerInfo.email,
+        fullName: data.shippingAddress.fullName,
+        phone: data.shippingAddress.phone,
+        paymentMethod: data.paymentMethod,
       };
 
       // Call order creation API
       const orderResponse = await checkoutService.createOrder(orderRequest);
 
+      // Handle payment based on payment method
+      if (data.paymentMethod === "VNPAY") {
+        try {
+          // Get VNPay payment URL
+          const paymentUrl = await paymentService.createPaymentUrl(orderResponse.orderId);
+          
+          // Clear cart and form data
+          clearCart();
+          checkoutService.clearFormData();
+          
+          // Redirect to VNPay payment page
+          window.location.href = paymentUrl;
+          return; // Don't navigate to confirmation page
+        } catch (error: any) {
+          console.error("Failed to create payment URL:", error);
+          toast({
+            title: "Lỗi thanh toán",
+            description: error.message || "Không thể tạo liên kết thanh toán. Vui lòng thử lại.",
+            variant: "destructive",
+          });
+          return; // Don't proceed if payment URL creation fails
+        }
+      } else {
+        // COD - proceed normally
       // Clear cart and form data
       clearCart();
       checkoutService.clearFormData();
@@ -282,6 +349,7 @@ export default function Checkout() {
           totalAmount: orderResponse.totalAmount,
         },
       });
+      }
     } catch (error: any) {
       console.error("Failed to create order:", error);
       toast({
@@ -323,7 +391,7 @@ export default function Checkout() {
           </div>
         </nav>
 
-        <div className="grid md:grid-cols-[1fr_400px] gap-8">
+        <div className="grid md:grid-cols-[1fr_440px] gap-8">
           {/* Checkout Form */}
           <div className="space-y-6">
             <h1 className="text-2xl font-light tracking-wide">Thông tin giao hàng</h1>
@@ -332,9 +400,25 @@ export default function Checkout() {
               {/* Shipping Address Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-normal">Địa chỉ giao hàng</CardTitle>
+                  <CardTitle className="text-lg font-normal">Thông tin giao hàng</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">
+                      Email <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="email"
+                      {...register("customerInfo.email")}
+                      placeholder="Nhập email"
+                    />
+                    {errors.customerInfo?.email && (
+                      <p className="text-sm text-destructive">
+                        {errors.customerInfo?.email.message}
+                      </p>
+                    )}
+                  </div>
                   {/* Full Name */}
                   <div className="space-y-2">
                     <Label htmlFor="fullName">
@@ -524,38 +608,123 @@ export default function Checkout() {
                   <CardTitle className="text-lg font-normal">Phương thức vận chuyển</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <RadioGroup
-                    value={shippingMethod}
-                    onValueChange={(value) => setValue("shippingMethod", value as "standard" | "express")}
-                  >
-                    <div className="space-y-4">
-                      {SHIPPING_METHODS.map((method) => (
-                        <div
-                          key={method.value}
-                          className="flex items-center space-x-3 p-4 border rounded-md hover:bg-accent/50 transition-colors"
-                        >
-                          <RadioGroupItem value={method.value} id={method.value} />
-                          <Label
-                            htmlFor={method.value}
-                            className="flex-1 cursor-pointer font-normal"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium">{method.label}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {method.estimatedDays}
-                                </div>
-                              </div>
-                              <div className="font-medium">{formatPrice(method.cost)}₫</div>
-                            </div>
-                          </Label>
-                        </div>
-                      ))}
+                  {loadingServices ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <span className="text-sm text-muted-foreground">Đang tải...</span>
                     </div>
-                  </RadioGroup>
+                  ) : services.length > 0 ? (
+                    <RadioGroup
+                      value={selectedServiceTypeId?.toString() || ""}
+                      onValueChange={(value) => {
+                        const serviceTypeId = Number.parseInt(value, 10);
+                        if (!Number.isNaN(serviceTypeId)) {
+                          setSelectedServiceTypeId(serviceTypeId);
+                          // Update form value for validation
+                          const validServices = services.filter(s => s.serviceTypeId != null);
+                          const selectedService = validServices.find(s => s.serviceTypeId === serviceTypeId);
+                          if (selectedService && validServices.length > 0) {
+                            setValue("shippingMethod", selectedService.serviceTypeId === validServices[0]?.serviceTypeId ? "standard" : "express");
+                          }
+                        }
+                      }}
+                    >
+                      <div className="space-y-4">
+                        {services
+                          .filter((service) => service.serviceTypeId != null)
+                          .map((service) => (
+                            <div
+                              key={service.serviceTypeId}
+                              className="flex items-center space-x-3 p-4 border rounded-md hover:bg-accent/50 transition-colors"
+                            >
+                              <RadioGroupItem 
+                                value={service.serviceTypeId.toString()} 
+                                id={`service-${service.serviceTypeId}`} 
+                              />
+                              <Label
+                                htmlFor={`service-${service.serviceTypeId}`}
+                                className="flex-1 cursor-pointer font-normal"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium">{service.shortName || "N/A"}</div>
+                                  </div>
+                                </div>
+                              </Label>
+                            </div>
+                          ))}
+                      </div>
+                    </RadioGroup>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-4">
+                      Không có phương thức vận chuyển nào khả dụng.
+                    </p>
+                  )}
                   {errors.shippingMethod && (
                     <p className="text-sm text-destructive mt-2">
                       {errors.shippingMethod.message}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Payment Method */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-normal">Phương thức thanh toán</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup
+                    value={paymentMethod || "COD"}
+                    onValueChange={(value) => setValue("paymentMethod", value as "COD" | "VNPAY")}
+                  >
+                    <div className="space-y-4">
+                      {/* COD Option */}
+                      <Label
+                        htmlFor="payment-cod"
+                        className="flex items-center space-x-3 p-4 border rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+                      >
+                        <RadioGroupItem value="COD" id="payment-cod" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Wallet className="h-5 w-5 text-muted-foreground" />
+                              <div>
+                                <div className="font-medium">Thanh toán khi nhận hàng (COD)</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Thanh toán bằng tiền mặt khi nhận hàng
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Label>
+
+                      {/* VNPay Option */}
+                      <Label
+                        htmlFor="payment-vnpay"
+                        className="flex items-center space-x-3 p-4 border rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+                      >
+                        <RadioGroupItem value="VNPAY" id="payment-vnpay" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <CreditCard className="h-5 w-5 text-muted-foreground" />
+                              <div>
+                                <div className="font-medium">Thanh toán qua VNPay</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Thanh toán trực tuyến qua cổng thanh toán VNPay
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  {errors.paymentMethod && (
+                    <p className="text-sm text-destructive mt-2">
+                      {errors.paymentMethod.message}
                     </p>
                   )}
                 </CardContent>
@@ -590,14 +759,9 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Cart Items */}
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className="max-h-96 overflow-y-auto">
                   {items.map((item) => (
-                    <CartItem
-                      key={item.id}
-                      item={item}
-                      onUpdateQuantity={updateQuantity}
-                      onRemove={removeItem}
-                    />
+                    <CheckoutLineItem key={item.id} item={item} />
                   ))}
                 </div>
 

@@ -56,7 +56,7 @@ export const BookCard = ({
 
       // For now, we'll use a default price since Book model doesn't have price
       // In a real implementation, price should come from the API
-      const defaultPrice = 0; // TODO: Get actual price from API
+      const defaultPrice = bookData.physicalBookInfo?.currentPrice || bookData.ebookInfo?.currentPrice || 0;
       
       // Add physical book to cart (format selection can be added later)
       addItem(bookData, "physical", 1, defaultPrice);
