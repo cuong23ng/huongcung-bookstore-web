@@ -13,16 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
-import { CheckoutFormData } from "@/models";
+import { CheckoutFormData, ShippingAddress, CheckoutOrderItem } from "@/models";
 import { GhnProvince, GhnDistrict, GhnWard, GhnService } from "@/models";
 import { CheckoutService } from "@/services/CheckoutService";
-import { PaymentService } from "@/services/PaymentService";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, Wallet } from "lucide-react";
 import { CheckoutLineItem } from "@/components/CheckoutLineItem";
 
 const checkoutService = CheckoutService.getInstance();
-const paymentService = PaymentService.getInstance();
 
 // Zod schema for shipping address validation with GHN fields
 const shippingAddressSchema = z.object({
@@ -67,6 +65,7 @@ export default function Checkout() {
   const { items, subtotal, clearCart } = useCart();
   const { toast } = useToast();
   const [shippingCost, setShippingCost] = useState(0);
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<string | undefined>(undefined);
   
   // GHN address data
   const [provinces, setProvinces] = useState<GhnProvince[]>([]);
@@ -74,6 +73,11 @@ export default function Checkout() {
   const [wards, setWards] = useState<GhnWard[]>([]);
   const [services, setServices] = useState<GhnService[]>([]);
   const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<number | undefined>(undefined);
+  
+  // Store selected address names for order submission
+  const [selectedProvinceName, setSelectedProvinceName] = useState<string | undefined>(undefined);
+  const [selectedDistrictName, setSelectedDistrictName] = useState<string | undefined>(undefined);
+  const [selectedWardName, setSelectedWardName] = useState<string | undefined>(undefined);
   
   // Loading states
   const [loadingProvinces, setLoadingProvinces] = useState(false);
@@ -126,6 +130,15 @@ export default function Checkout() {
         const data = await checkoutService.getGhnProvinces();
         setProvinces(data);
         setGhnApiAvailable(true);
+        
+        // Restore province name if we have a saved provinceId
+        const currentProvinceId = watch("shippingAddress.provinceId");
+        if (currentProvinceId) {
+          const savedProvince = data.find(p => p.provinceId === currentProvinceId);
+          if (savedProvince) {
+            setSelectedProvinceName(savedProvince.provinceName);
+          }
+        }
       } catch (error) {
         console.error("Failed to load provinces:", error);
         setGhnApiAvailable(false);
@@ -162,12 +175,12 @@ export default function Checkout() {
         setLoadingServices(false);
       }
     };
-    
+
     if (ghnApiAvailable) {
       loadProvinces();
     }
     loadServices();
-  }, [ghnApiAvailable, toast]);
+  }, [ghnApiAvailable, toast, watch]);
 
   // Load districts when province is selected
   useEffect(() => {
@@ -179,10 +192,21 @@ export default function Checkout() {
       setWards([]);
       setValue("shippingAddress.districtId", undefined);
       setValue("shippingAddress.wardCode", "");
+      setSelectedDistrictName(undefined);
+      setSelectedWardName(undefined);
       
       try {
         const data = await checkoutService.getGhnDistricts(selectedProvinceId);
         setDistricts(data);
+        
+        // Restore district name if we have a saved districtId
+        const currentDistrictId = watch("shippingAddress.districtId");
+        if (currentDistrictId) {
+          const savedDistrict = data.find(d => d.districtId === currentDistrictId);
+          if (savedDistrict) {
+            setSelectedDistrictName(savedDistrict.districtName);
+          }
+        }
       } catch (error) {
         console.error("Failed to load districts:", error);
         toast({
@@ -196,7 +220,7 @@ export default function Checkout() {
     };
     
     loadDistricts();
-  }, [selectedProvinceId, ghnApiAvailable, setValue, toast]);
+  }, [selectedProvinceId, ghnApiAvailable, setValue, toast, watch]);
 
   // Load wards when district is selected
   useEffect(() => {
@@ -206,10 +230,20 @@ export default function Checkout() {
       setLoadingWards(true);
       setWards([]);
       setValue("shippingAddress.wardCode", "");
+      setSelectedWardName(undefined);
       
       try {
         const data = await checkoutService.getGhnWards(selectedDistrictId);
         setWards(data);
+        
+        // Restore ward name if we have a saved wardCode
+        const currentWardCode = watch("shippingAddress.wardCode");
+        if (currentWardCode) {
+          const savedWard = data.find(w => w.wardCode === currentWardCode);
+          if (savedWard) {
+            setSelectedWardName(savedWard.wardName);
+          }
+        }
       } catch (error) {
         console.error("Failed to load wards:", error);
         toast({
@@ -223,48 +257,88 @@ export default function Checkout() {
     };
     
     loadWards();
-  }, [selectedDistrictId, ghnApiAvailable, setValue, toast]);
+  }, [selectedDistrictId, ghnApiAvailable, setValue, toast, watch]);
 
   // Calculate delivery fee when ward is selected
   useEffect(() => {
     if (!selectedWardCode || !selectedDistrictId || !ghnApiAvailable || !selectedServiceTypeId) {
+      // Reset expected delivery date if we don't have enough info to calculate
+      setExpectedDeliveryDate(undefined);
       return;
     }
     
     const calculateFee = async () => {
       setCalculatingFee(true);
       try {
-        // Calculate total weight from cart items (simplified: assume 500g per physical book)
-        const totalWeight = items
-          .filter(item => item.format === "physical")
-          .reduce((sum, item) => sum + item.quantity * 500, 1000); // Minimum 1kg
-        
-        const feeResponse = await checkoutService.calculateDeliveryFee({
+        // Build items payload for fee calculation (mirror order items)
+        const feeItems: CheckoutOrderItem[] = items.map((item) => ({
+          bookCode: item.bookId, // cart.bookId is actually book code
+          quantity: item.quantity,
+          bookType: item.format === "physical" ? "PHYSICAL" : "EBOOK",
+        }));
+
+        // Build shipping address payload for fee calculation
+        const shippingAddressForm = watch("shippingAddress");
+        const customerInfoForm = watch("customerInfo");
+
+        const shippingAddressForFee: ShippingAddress = {
+          fullName: shippingAddressForm.fullName || customerInfoForm.fullName || "",
+          phone: shippingAddressForm.phone || customerInfoForm.phone || "",
+          address: shippingAddressForm.address,
+          city: shippingAddressForm.city,
+          postalCode: shippingAddressForm.postalCode,
+          provinceId: selectedProvinceId,
+          provinceName: selectedProvinceName,
           districtId: selectedDistrictId,
+          districtName: selectedDistrictName,
           wardCode: selectedWardCode,
-          weight: totalWeight,
+          wardName: selectedWardName,
           serviceTypeId: selectedServiceTypeId,
+        };
+
+        const feeResponse = await checkoutService.calculateDeliveryFee({
+          items: feeItems,
+          shippingAddress: shippingAddressForFee,
         });
-        
-        setShippingCost(feeResponse.total);
+
+        setShippingCost(feeResponse.totalFee ?? 0);
+
+        // Only show expected delivery date if there are shipments from more than one warehouse
+        if (feeResponse.warehouseCount > 1 && feeResponse.expectedDeliveryTime) {
+          setExpectedDeliveryDate(feeResponse.expectedDeliveryTime);
+        } else {
+          setExpectedDeliveryDate(undefined);
+        }
       } catch (error) {
         console.error("Failed to calculate delivery fee:", error);
         setShippingCost(0);
+        setExpectedDeliveryDate(undefined);
       } finally {
         setCalculatingFee(false);
       }
     };
     
     calculateFee();
-  }, [selectedWardCode, selectedDistrictId, selectedServiceTypeId, items, ghnApiAvailable]);
+  }, [selectedWardCode, selectedDistrictId, selectedServiceTypeId, items, ghnApiAvailable, selectedProvinceId, selectedProvinceName, selectedDistrictName, selectedWardName, watch]);
 
   // Load saved form data on mount
   useEffect(() => {
     const savedData = checkoutService.loadFormData();
-    if (savedData) {
+    if (savedData && savedData.shippingAddress) {
       setValue("shippingAddress", savedData.shippingAddress);
       setValue("shippingMethod", savedData.shippingMethod);
       setValue("saveAsDefault", savedData.saveAsDefault);
+      
+      // Restore selected names if available in saved data
+      if (savedData.shippingAddress.provinceName) {
+        setSelectedProvinceName(savedData.shippingAddress.provinceName);
+      }
+      if (savedData.shippingAddress.districtName) {
+        setSelectedDistrictName(savedData.shippingAddress.districtName);
+      }
+      if (savedData.shippingAddress.wardName) {
+        setSelectedWardName(savedData.shippingAddress.wardName);
+      }
     }
   }, [setValue]);
 
@@ -292,63 +366,102 @@ export default function Checkout() {
   const onSubmit = async (data: CheckoutFormData) => {
     try {
       // Transform cart items to order items
-      const orderItems = items.map(item => ({
+      const orderItems: CheckoutOrderItem[] = items.map((item) => ({
         bookCode: item.bookId, // bookId in cart is actually the book code
         quantity: item.quantity,
-        itemType: item.format.toUpperCase() as "PHYSICAL" | "DIGITAL",
+        bookType: item.format === "physical" ? "PHYSICAL" : "EBOOK",
       }));
 
-      // Create order request
+      // Create order request with full address information
+      // Priority: form data > state > arrays lookup
+      const provinceId = data.shippingAddress.provinceId;
+      const districtId = data.shippingAddress.districtId;
+      const wardCode = data.shippingAddress.wardCode;
+      
+      // Get names from form data first (if user selected and it was saved to form)
+      let provinceName = data.shippingAddress.provinceName || selectedProvinceName;
+      if (!provinceName && provinceId != null) {
+        const foundProvince = provinces.find(p => 
+          p.provinceId === provinceId || 
+          p.provinceId === Number(provinceId) || 
+          String(p.provinceId) === String(provinceId)
+        );
+        provinceName = foundProvince?.provinceName;
+      }
+      
+      let districtName = data.shippingAddress.districtName || selectedDistrictName;
+      if (!districtName && districtId != null) {
+        const foundDistrict = districts.find(d => 
+          d.districtId === districtId || 
+          d.districtId === Number(districtId) || 
+          String(d.districtId) === String(districtId)
+        );
+        districtName = foundDistrict?.districtName;
+      }
+      
+      let wardName = data.shippingAddress.wardName || selectedWardName;
+      if (!wardName && wardCode) {
+        const foundWard = wards.find(w => w.wardCode === wardCode);
+        wardName = foundWard?.wardName;
+      }
+
+      console.log("Order submission - Address names:", {
+        provinceId,
+        provinceName: provinceName || "NOT FOUND",
+        districtId,
+        districtName: districtName || "NOT FOUND",
+        wardCode,
+        wardName: wardName || "NOT FOUND",
+        fromFormData: {
+          provinceName: data.shippingAddress.provinceName,
+          districtName: data.shippingAddress.districtName,
+          wardName: data.shippingAddress.wardName,
+        },
+        fromState: {
+          selectedProvinceName,
+          selectedDistrictName,
+          selectedWardName,
+        },
+        arraysCount: {
+          provinces: provinces.length,
+          districts: districts.length,
+          wards: wards.length,
+        }
+      });
+
       const orderRequest = {
         items: orderItems,
-        shippingAddress: data.shippingAddress,
+        shippingAddress: {
+          ...data.shippingAddress,
+          provinceName: provinceName || undefined,
+          districtName: districtName || undefined,
+          wardName: wardName || undefined,
+          serviceTypeId: selectedServiceTypeId,
+        },
         shippingMethod: data.shippingMethod,
-        serviceTypeId: selectedServiceTypeId,
         email: data.customerInfo.email,
         fullName: data.shippingAddress.fullName,
         phone: data.shippingAddress.phone,
         paymentMethod: data.paymentMethod,
       };
 
-      // Call order creation API
       const orderResponse = await checkoutService.createOrder(orderRequest);
 
-      // Handle payment based on payment method
-      if (data.paymentMethod === "VNPAY") {
-        try {
-          // Get VNPay payment URL
-          const paymentUrl = await paymentService.createPaymentUrl(orderResponse.orderId);
-          
-          // Clear cart and form data
-          clearCart();
-          checkoutService.clearFormData();
-          
-          // Redirect to VNPay payment page
-          window.location.href = paymentUrl;
-          return; // Don't navigate to confirmation page
-        } catch (error: any) {
-          console.error("Failed to create payment URL:", error);
-          toast({
-            title: "Lỗi thanh toán",
-            description: error.message || "Không thể tạo liên kết thanh toán. Vui lòng thử lại.",
-            variant: "destructive",
-          });
-          return; // Don't proceed if payment URL creation fails
-        }
-      } else {
-        // COD - proceed normally
-      // Clear cart and form data
       clearCart();
       checkoutService.clearFormData();
 
-      // Navigate to order confirmation
-      navigate("/checkout/confirmation", {
-        state: {
-          orderNumber: orderResponse.orderNumber,
-          orderId: orderResponse.orderId,
-          totalAmount: orderResponse.totalAmount,
-        },
-      });
+      if (orderResponse.paymentUrl && data.paymentMethod !== "COD") {
+        window.location.href = orderResponse.paymentUrl;
+        return;
+      } else {
+
+        navigate("/checkout/confirmation", {
+          state: {
+            orderNumber: orderResponse.orderNumber,
+            orderId: orderResponse.orderId,
+            totalAmount: orderResponse.totalAmount,
+          },
+        });
       }
     } catch (error: any) {
       console.error("Failed to create order:", error);
@@ -478,9 +591,22 @@ export default function Checkout() {
                     <Select
                       value={selectedProvinceId?.toString() || ""}
                       onValueChange={(value) => {
-                        setValue("shippingAddress.provinceId", parseInt(value));
+                        const provinceId = parseInt(value);
+                        const selectedProvince = provinces.find(p => p.provinceId === provinceId);
+                        if (selectedProvince) {
+                          setSelectedProvinceName(selectedProvince.provinceName);
+                          setValue("shippingAddress.provinceName", selectedProvince.provinceName);
+                          console.log("Selected province:", selectedProvince.provinceName);
+                        } else {
+                          console.warn("Province not found in array for ID:", provinceId, "Available provinces:", provinces.length);
+                        }
+                        setValue("shippingAddress.provinceId", provinceId);
                         setValue("shippingAddress.districtId", undefined);
+                        setValue("shippingAddress.districtName", undefined);
                         setValue("shippingAddress.wardCode", "");
+                        setValue("shippingAddress.wardName", undefined);
+                        setSelectedDistrictName(undefined);
+                        setSelectedWardName(undefined);
                       }}
                       disabled={!ghnApiAvailable || loadingProvinces}
                     >
@@ -518,8 +644,12 @@ export default function Checkout() {
                     <Select
                       value={selectedDistrictId?.toString() || ""}
                       onValueChange={(value) => {
-                        setValue("shippingAddress.districtId", parseInt(value));
+                        const districtId = parseInt(value);
+                        const selectedDistrict = districts.find(d => d.districtId === districtId);
+                        setValue("shippingAddress.districtId", districtId);
+                        setSelectedDistrictName(selectedDistrict?.districtName);
                         setValue("shippingAddress.wardCode", "");
+                        setSelectedWardName(undefined);
                       }}
                       disabled={!selectedProvinceId || !ghnApiAvailable || loadingDistricts}
                     >
@@ -556,7 +686,17 @@ export default function Checkout() {
                     </Label>
                     <Select
                       value={selectedWardCode || ""}
-                      onValueChange={(value) => setValue("shippingAddress.wardCode", value)}
+                      onValueChange={(value) => {
+                        const selectedWard = wards.find(w => w.wardCode === value);
+                        if (selectedWard) {
+                          setSelectedWardName(selectedWard.wardName);
+                          setValue("shippingAddress.wardName", selectedWard.wardName);
+                          console.log("Selected ward:", selectedWard.wardName);
+                        } else {
+                          console.warn("Ward not found in array for code:", value, "Available wards:", wards.length);
+                        }
+                        setValue("shippingAddress.wardCode", value);
+                      }}
                       disabled={!selectedDistrictId || !ghnApiAvailable || loadingWards}
                     >
                       <SelectTrigger id="ward">
@@ -784,6 +924,14 @@ export default function Checkout() {
                       )}
                     </span>
                   </div>
+                  {expectedDeliveryDate && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Dự kiến giao:</span>
+                      <span className="font-normal">
+                        {new Date(expectedDeliveryDate).toLocaleDateString("vi-VN")}
+                      </span>
+                    </div>
+                  )}
                   <div className="border-t border-border pt-4 flex justify-between">
                     <span className="text-base font-normal">Tổng cộng:</span>
                     <span className="text-lg font-normal">{formatPrice(total)}₫</span>

@@ -9,8 +9,13 @@ export interface ShippingAddress {
   postalCode?: string; // Optional
   // GHN address fields
   provinceId?: number;
+  provinceName?: string;
   districtId?: number;
+  districtName?: string;
   wardCode?: string;
+  wardName?: string;
+  // Selected shipping service type (GHN)
+  serviceTypeId?: number;
 }
 
 export interface CustomerInfo {

@@ -12,6 +12,7 @@ import {
   CheckoutOrderResponse,
 } from "@/models/Ghn";
 import { ApiResponse } from "@/models";
+import { API_CONFIG } from "@/config/api.config";
 
 const CHECKOUT_FORM_STORAGE_KEY = "hc_bookstore_checkout_form";
 
@@ -70,13 +71,10 @@ export class CheckoutService {
     }
   }
 
-  /**
-   * Get GHN provinces
-   */
   async getGhnProvinces(): Promise<GhnProvince[]> {
     try {
       const response = await this.apiFetcher.get<ApiResponse<any[]>>(
-        "/checkout/ghn/provinces"
+        API_CONFIG.endpoints.delivery.provinces
       );
       const rawData = response.data?.data ?? [];
       // Transform from API format (ProvinceID, ProvinceName) to frontend format (provinceId, provinceName)
@@ -90,15 +88,12 @@ export class CheckoutService {
     }
   }
 
-  /**
-   * Get GHN districts for a province
-   */
   async getGhnDistricts(provinceId: number): Promise<GhnDistrict[]> {
     try {
       const response = await this.apiFetcher.get<ApiResponse<any[]>>(
-        "/checkout/ghn/districts",
+        API_CONFIG.endpoints.delivery.districts,
         {
-          params: { provinceId },
+          params: { provinceId: provinceId.toString() },
         }
       );
       const rawData = response.data?.data ?? [];
@@ -114,13 +109,13 @@ export class CheckoutService {
     }
   }
 
-  /**
-   * Get GHN services
-   */
-  async getGhnServices(): Promise<GhnService[]> {
+  async getGhnServices(toDistrictId: string): Promise<GhnService[]> {
     try {
       const response = await this.apiFetcher.get<ApiResponse<GhnService[]>>(
-        "/checkout/ghn/services"
+        API_CONFIG.endpoints.delivery.services,
+        {
+          params: { toDistrictId },
+        }
       );
       return response.data?.data ?? [];
     } catch (error) {
@@ -135,9 +130,9 @@ export class CheckoutService {
   async getGhnWards(districtId: number): Promise<GhnWard[]> {
     try {
       const response = await this.apiFetcher.get<ApiResponse<any[]>>(
-        "/checkout/ghn/wards",
+        API_CONFIG.endpoints.delivery.wards,
         {
-          params: { districtId },
+          params: { districtId: districtId.toString() },
         }
       );
       const rawData = response.data?.data ?? [];
@@ -153,13 +148,11 @@ export class CheckoutService {
     }
   }
 
-  /**
-   * Calculate delivery fee using GHN API
-   */
+
   async calculateDeliveryFee(request: CalculateFeeRequest): Promise<CalculateFeeResponse> {
     try {
       const response = await this.apiFetcher.post<ApiResponse<CalculateFeeResponse>>(
-        "/checkout/ghn/calculate-fee",
+        API_CONFIG.endpoints.order.calculateFee,
         request
       );
       if (!response.data?.data) {
@@ -172,13 +165,10 @@ export class CheckoutService {
     }
   }
 
-  /**
-   * Create order
-   */
   async createOrder(request: CheckoutOrderRequest): Promise<CheckoutOrderResponse> {
     try {
       const response = await this.apiFetcher.post<ApiResponse<CheckoutOrderResponse>>(
-        "/checkout/orders",
+        API_CONFIG.endpoints.order.checkout,
         request
       );
       if (!response.data?.data) {

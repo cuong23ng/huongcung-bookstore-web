@@ -5,7 +5,7 @@ export class ApiClient  {
     // Use relative URL in development (via Vite proxy) or full URL in production
     const baseURL = import.meta.env.MODE === 'development'
       ? '/api' 
-      : import.meta.env.VITE_API_BASE_URL || 'http://api-dev.huongcungbookstore.com';
+      : import.meta.env.VITE_API_BASE_URL || 'https://api-dev.huongcungbookstore.com/api';
     
     const instance = axios.create({
       baseURL,
@@ -14,7 +14,6 @@ export class ApiClient  {
       },
     });
 
-    // Add JWT token to requests if available
     instance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         const token = localStorage.getItem('token');

@@ -2,25 +2,32 @@ export interface AuthResponse {
   token: string;
   type: string;
   id: number;
+  username: string;
   email: string;
   firstName: string;
   lastName: string;
   roles: string[];
-  userType: string;
 }
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterRequest {
-  email: string;
-  password: string;
   firstName: string;
   lastName: string;
+  username: string;
+  email: string;
+  password: string;
   phone: string;
   gender: string;
+}
+
+export interface LogoutResponse {
+  message: string;
+  success: boolean;
+  timestamp: number;
 }
 
 export interface AuthTokens {

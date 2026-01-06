@@ -8,10 +8,10 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    allowedHosts: ["front-end.huongcungbookstore.com"],
+    allowedHosts: ["huongcungbookstore.com"],
     proxy: {
       "/api": {
-        target: "http://api-dev.huongcungbookstore.com",
+        target: "https://api-dev.huongcungbookstore.com",
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path,

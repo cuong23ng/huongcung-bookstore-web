@@ -30,18 +30,18 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const authSchema = z.object({
-  email: z.string().trim().email({ message: "Email không hợp lệ" }).max(255),
+const loginSchema = z.object({
+  username: z.string().trim().min(1, { message: "Tên đăng nhập là bắt buộc" }).max(255),
   password: z.string().min(6, { message: "Mật khẩu phải có ít nhất 6 ký tự" }).max(100),
-  fullName: z.string().trim().min(1, { message: "Vui lòng nhập tên" }).max(100).optional(),
 });
 
 const registerSchema = z.object({
   firstName: z.string().trim().min(2, { message: "Tên phải có ít nhất 2 ký tự" }).max(50, { message: "Tên không được quá 50 ký tự" }),
   lastName: z.string().trim().min(2, { message: "Họ phải có ít nhất 2 ký tự" }).max(50, { message: "Họ không được quá 50 ký tự" }),
+  username: z.string().trim().email({ message: "Tên đăng nhập phải là username hoặc email hợp lệ" }).max(255),
   email: z.string().trim().email({ message: "Email không hợp lệ" }).max(255),
   password: z.string().min(6, { message: "Mật khẩu phải có ít nhất 6 ký tự" }).max(100),
-  phone: z.string().regex(/^\d{10,11}$/, { message: "Số điện thoại phải có 10-11 chữ số" }),
+  phone: z.string().regex(/^[0-9]{10,11}$/, { message: "Số điện thoại phải có 10-11 chữ số" }),
   gender: z.string().min(1, { message: "Vui lòng chọn giới tính" }),
 });
 
@@ -51,10 +51,11 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Login form
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   
   // Signup form
+  const [signupUsername, setSignupUsername] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -75,10 +76,10 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const validated = authSchema.parse({ email: loginEmail, password: loginPassword });
+      const validated = loginSchema.parse({ username: loginUsername, password: loginPassword });
       
       const loginData: LoginRequest = {
-        email: validated.email,
+        username: validated.username,
         password: validated.password,
       };
       const authData = await authService.login(loginData);
@@ -91,17 +92,23 @@ const Auth = () => {
       // Navigate to home page
       navigate("/");
     } catch (error) {
-      if (error instanceof AxiosError) {
-        const errorMessage = error.response?.data?.message;
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Lỗi xác thực",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else if (error instanceof AxiosError) {
+        const errorMessage = error.response?.data?.message || error.response?.data?.error?.message;
         toast({
           title: "Lỗi đăng nhập",
-          description: errorMessage,
+          description: errorMessage || "Tên đăng nhập hoặc mật khẩu không đúng",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Lỗi đăng nhập",
-          description: "Email hoặc mật khẩu không đúng",
+          description: "Tên đăng nhập hoặc mật khẩu không đúng",
           variant: "destructive",
         });
       }
@@ -118,6 +125,7 @@ const Auth = () => {
       const validated = registerSchema.parse({ 
         firstName,
         lastName,
+        username: signupUsername,
         email: signupEmail, 
         password: signupPassword,
         phone,
@@ -125,12 +133,13 @@ const Auth = () => {
       });
       
       const registerData: RegisterRequest = {
+        firstName: validated.firstName,
+        lastName: validated.lastName,
+        username: validated.username,
         email: validated.email,
         password: validated.password,
-        firstName: validated.firstName,
-        lastName: lastName,
-        phone: phone,
-        gender: gender
+        phone: validated.phone,
+        gender: validated.gender
       };
       const authData = await authService.register(registerData);
 
@@ -146,6 +155,13 @@ const Auth = () => {
         toast({
           title: "Lỗi xác thực",
           description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else if (error instanceof AxiosError) {
+        const errorMessage = error.response?.data?.message || error.response?.data?.error?.message;
+        toast({
+          title: "Lỗi đăng ký",
+          description: errorMessage || "Có lỗi xảy ra khi đăng ký tài khoản",
           variant: "destructive",
         });
       } else {
@@ -188,13 +204,13 @@ const Auth = () => {
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-username">Tên đăng nhập (Username hoặc Email)</Label>
                   <Input
-                    id="login-email"
-                    type="email"
+                    id="login-username"
+                    type="text"
                     placeholder="example@email.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
                     required
                     maxLength={255}
                   />
@@ -276,6 +292,18 @@ const Auth = () => {
                       maxLength={50}
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-username">Tên đăng nhập (Username hoặc email)</Label>
+                  <Input
+                    id="signup-username"
+                    type="email"
+                    placeholder="example@email.com"
+                    value={signupUsername}
+                    onChange={(e) => setSignupUsername(e.target.value)}
+                    required
+                    maxLength={255}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>

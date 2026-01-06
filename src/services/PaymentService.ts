@@ -2,6 +2,7 @@ import { ApiClient } from "@/integrations/ApiClient";
 import type { AxiosInstance } from "axios";
 import { AxiosError } from "axios";
 import type { ApiResponse } from "@/models";
+import { API_CONFIG } from "@/config/api.config";
 
 /**
  * Service for handling payment operations
@@ -23,13 +24,22 @@ export class PaymentService {
 
   /**
    * Create VNPay payment URL for an order
-   * @param orderId The order ID
+   * @param orderNumber The order number
+   * @param amount The order amount
+   * @param paymentMethod The payment method (VNPAY, COD, etc.)
    * @returns The payment URL to redirect to
    */
-  async createPaymentUrl(orderId: number): Promise<string> {
+  async createPaymentUrl(orderNumber: string, amount: number, paymentMethod: string = 'VNPAY'): Promise<string> {
     try {
-      const response = await this.apiFetcher.get<any>(
-        `/payment/create-payment/${orderId}`
+      const response = await this.apiFetcher.get<ApiResponse<string>>(
+        API_CONFIG.endpoints.payment.createUrl,
+        {
+          params: {
+            orderNumber,
+            amount,
+            paymentMethod,
+          },
+        }
       );
       
       // Check if there's an error code (BaseResponse structure)

@@ -1,0 +1,40 @@
+export const API_CONFIG = {
+  baseURL: import.meta.env.MODE === 'development'
+    ? '/api'
+    : import.meta.env.VITE_API_BASE_URL || 'https://api-dev.huongcungbookstore.com/api',
+
+  endpoints: {
+    catalog: {
+      books: '/catalog/books',
+      bookDetails: (code: string) => `/catalog/books/${code}`,
+      bookForOrder: (code: string) => `/catalog/books/order/physical?code=${code}`,
+      suggestions: '/catalog/books/suggest',
+    },
+
+    order: {
+      checkout: '/order/checkout',
+      calculateFee: '/order/calculate-fee',
+      // TODO: Add order history endpoints when available
+      // history: '/order/customer/orders',
+      // orderDetails: (id: number) => `/order/customer/orders/${id}`,
+    },
+
+    payment: {
+      createUrl: '/payment/create-url',
+    },
+
+    delivery: {
+      provinces: '/delivery/provinces',
+      districts: '/delivery/districts',
+      wards: '/delivery/wards',
+      services: '/delivery/services',
+    },
+
+    auth: {
+      login: '/auth/login',
+      register: '/auth/register',
+      logout: '/auth/logout',
+    },
+  },
+} as const;
+

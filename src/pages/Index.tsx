@@ -24,7 +24,6 @@ const Index = () => {
       return formatPrice(physicalPrice);
     }
     
-    // Both are not null, display the smaller price with "Chỉ từ"
     const minPrice = Math.min(physicalPrice, ebookPrice);
     return `Chỉ từ ${formatPrice(minPrice)}`;
   };
@@ -33,11 +32,11 @@ const Index = () => {
     const load = async () => {
       try {
         const bookService = BookService.getInstance();
-        const bookPage = await bookService.getAllBooks(0, 20);
+        const bookPage = await bookService.getAllBooks(1, 20);
         const mapped: BestSellerItem[] = bookPage.books.map((b, idx) => {
           const authors = b.authors?.map(author => ({ name: author.name })) || [];
           return {
-            id: b.code || String(idx),
+            id: b.code,
             title: b.title,
             authors,
             price: getDisplayPrice(b.physicalPrice, b.ebookPrice),

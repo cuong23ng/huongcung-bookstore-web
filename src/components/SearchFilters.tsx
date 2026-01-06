@@ -12,14 +12,12 @@ interface SearchFiltersProps {
   selectedGenres: string[];
   selectedLanguages: string[];
   selectedFormats: string[];
-  selectedCities: string[];
   minPrice: number | undefined;
   maxPrice: number | undefined;
   onFilterChange: (filters: {
     genres?: string[];
     languages?: string[];
     formats?: string[];
-    cities?: string[];
     minPrice?: number;
     maxPrice?: number;
   }) => void;
@@ -30,7 +28,6 @@ export const SearchFilters = ({
   selectedGenres,
   selectedLanguages,
   selectedFormats,
-  selectedCities,
   minPrice,
   maxPrice,
   onFilterChange,
@@ -42,7 +39,6 @@ export const SearchFilters = ({
     language: true,
     format: true,
     price: true,
-    city: true,
   });
 
   const toggleSection = (section: string) => {
@@ -73,13 +69,6 @@ export const SearchFilters = ({
     onFilterChange({ formats: newFormats });
   };
 
-  const handleCityToggle = (city: string) => {
-    const newCities = selectedCities.includes(city)
-      ? selectedCities.filter((c) => c !== city)
-      : [...selectedCities, city];
-    onFilterChange({ cities: newCities });
-  };
-
   const handlePriceChange = (type: "min" | "max", value: string) => {
     const numValue = value === "" ? undefined : Number(value);
     onFilterChange({
@@ -93,7 +82,6 @@ export const SearchFilters = ({
       genres: [],
       languages: [],
       formats: [],
-      cities: [],
       minPrice: undefined,
       maxPrice: undefined,
     });
@@ -103,7 +91,6 @@ export const SearchFilters = ({
     selectedGenres.length > 0 ||
     selectedLanguages.length > 0 ||
     selectedFormats.length > 0 ||
-    selectedCities.length > 0 ||
     minPrice !== undefined ||
     maxPrice !== undefined;
 
@@ -319,51 +306,6 @@ export const SearchFilters = ({
         )}
       </div>
 
-      <Separator />
-
-      {/* City Availability Filter */}
-      <div>
-        <button
-          onClick={() => toggleSection("city")}
-          className="flex items-center justify-between w-full mb-2"
-          aria-expanded={expandedSections.city}
-        >
-          <Label className="text-sm font-medium cursor-pointer">
-            Thành phố
-          </Label>
-          {expandedSections.city ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </button>
-        {expandedSections.city && (
-          <div className="space-y-2">
-            {["HANOI", "HCMC", "DANANG"].map((city) => {
-              const cityName =
-                city === "HANOI"
-                  ? "Hà Nội"
-                  : city === "HCMC"
-                  ? "Hồ Chí Minh"
-                  : "Đà Nẵng";
-              return (
-                <label
-                  key={city}
-                  className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedCities.includes(city)}
-                    onChange={() => handleCityToggle(city)}
-                    className="rounded"
-                  />
-                  <span className="text-sm">{cityName}</span>
-                </label>
-              );
-            })}
-          </div>
-        )}
-      </div>
     </div>
   );
 };

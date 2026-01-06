@@ -25,16 +25,15 @@ export interface GhnService {
 }
 
 export interface CalculateFeeRequest {
-  districtId: number;
-  wardCode: string;
-  weight: number; // in grams
-  serviceTypeId?: number;
+  items: CheckoutOrderItem[];
+  shippingAddress: ShippingAddress;
 }
 
 export interface CalculateFeeResponse {
-  total: number;
-  serviceFee: number;
-  expectedDeliveryTime?: string;
+  warehouseCount: number;
+  // ISO date string (LocalDate) from backend
+  expectedDeliveryTime: string;
+  totalFee: number;
 }
 
 export interface CheckoutOrderRequest {
@@ -52,7 +51,8 @@ export interface CheckoutOrderItem {
   bookId?: number; // Book ID (optional, for backward compatibility)
   bookCode?: string; // Book code (preferred)
   quantity: number;
-  itemType: "PHYSICAL" | "DIGITAL";
+  // Item format for backend BookType enum
+  bookType: "PHYSICAL" | "EBOOK";
 }
 
 export interface CheckoutOrderResponse {
@@ -60,6 +60,8 @@ export interface CheckoutOrderResponse {
   orderNumber: string;
   totalAmount: number;
   status: string;
+  paymentMethod?: string;
+  paymentUrl?: string;
 }
 
 import { ShippingAddress } from "./Checkout";

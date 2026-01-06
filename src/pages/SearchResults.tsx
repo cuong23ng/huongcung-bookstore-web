@@ -56,7 +56,6 @@ const SearchResults = () => {
   const genres = useMemo(() => searchParams.getAll("genre"), [searchParamsKey]);
   const languages = useMemo(() => searchParams.getAll("language"), [searchParamsKey]);
   const formats = useMemo(() => searchParams.getAll("format"), [searchParamsKey]);
-  const cities = useMemo(() => searchParams.getAll("city"), [searchParamsKey]);
   const minPrice = useMemo(() => {
     const value = searchParams.get("minPrice");
     return value ? Number(value) : undefined;
@@ -78,7 +77,6 @@ const SearchResults = () => {
           genre: genres.length > 0 ? genres : undefined,
           language: languages.length > 0 ? languages : undefined,
           format: formats.length > 0 ? formats : undefined,
-          city: cities.length > 0 ? cities : undefined,
           minPrice,
           maxPrice,
           page,
@@ -97,7 +95,7 @@ const SearchResults = () => {
 
     performSearch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, page, size, sort, genres, languages, formats, cities, minPrice, maxPrice]);
+  }, [query, page, size, sort, genres, languages, formats, minPrice, maxPrice]);
 
   const handleSearch = (searchQuery: string) => {
     const newParams = new URLSearchParams();
@@ -110,7 +108,6 @@ const SearchResults = () => {
     genres?: string[];
     languages?: string[];
     formats?: string[];
-    cities?: string[];
     minPrice?: number;
     maxPrice?: number;
   }) => {
@@ -133,12 +130,6 @@ const SearchResults = () => {
     newParams.delete("format");
     if (filters.formats && filters.formats.length > 0) {
       filters.formats.forEach((f) => newParams.append("format", f));
-    }
-
-    // Update cities
-    newParams.delete("city");
-    if (filters.cities && filters.cities.length > 0) {
-      filters.cities.forEach((c) => newParams.append("city", c));
     }
 
     // Update prices
@@ -192,7 +183,6 @@ const SearchResults = () => {
                   selectedGenres={genres}
                   selectedLanguages={languages}
                   selectedFormats={formats}
-                  selectedCities={cities}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
                   onFilterChange={handleFilterChange}
@@ -219,7 +209,6 @@ const SearchResults = () => {
                       selectedGenres={genres}
                       selectedLanguages={languages}
                       selectedFormats={formats}
-                      selectedCities={cities}
                       minPrice={minPrice}
                       maxPrice={maxPrice}
                       onFilterChange={(filters) => {

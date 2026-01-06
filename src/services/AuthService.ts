@@ -1,6 +1,7 @@
 import { ApiClient } from "@/integrations/ApiClient";
-import { AuthResponse, LoginRequest, RegisterRequest, User } from "../models";
+import { AuthResponse, LoginRequest, RegisterRequest, LogoutResponse } from "../models";
 import { AxiosInstance } from "axios";
+import { API_CONFIG } from "@/config/api.config";
 
 export class AuthService {
   private readonly apiFetcher: AxiosInstance;
@@ -18,33 +19,45 @@ export class AuthService {
   }
 
   public async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await this.apiFetcher.post('/auth/login', data);
+    const response = await this.apiFetcher.post<AuthResponse>(API_CONFIG.endpoints.auth.login, data);
+
     const authData = response.data as AuthResponse;
     this.saveAuthData(authData);
     return authData;
   }
 
   public async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await this.apiFetcher.post('/auth/register', data);
+    const response = await this.apiFetcher.post<AuthResponse>(API_CONFIG.endpoints.auth.register, data);
+
     const authData = response.data as AuthResponse;
     this.saveAuthData(authData);
     return authData;
   }
 
-  public async logout(): Promise<void> {
+  public async logout(): Promise<LogoutResponse> {
     // Get token and type from localStorage
     const token = this.getToken();
     const tokenType = this.getTokenType();
     
     if (token && tokenType) {
       // Set authorization header for logout request
-      await this.apiFetcher.post('/auth/logout', {}, {
-        headers: {
-          'Authorization': `${tokenType} ${token}`
+      const response = await this.apiFetcher.post<LogoutResponse>(
+        API_CONFIG.endpoints.auth.logout, 
+        {}, 
+        {
+          headers: {
+            'Authorization': `${tokenType} ${token}`
+          }
         }
-      });
+      );
+
+      const logoutData = response.data as LogoutResponse;
       this.clearAuthData();
+      return logoutData;
     }
+
+    this.clearAuthData();
+    return { message: 'No active session', success: false, timestamp: Date.now() };
   }
 
   private getToken(): string {
@@ -57,13 +70,13 @@ export class AuthService {
 
   private saveAuthData(authData: AuthResponse): void {
     localStorage.setItem('token', authData.token);
-    localStorage.setItem('tokenType', authData.type);
+    localStorage.setItem('tokenType', authData.type || 'Bearer');
     localStorage.setItem('userId', authData.id.toString());
     localStorage.setItem('userEmail', authData.email);
+    localStorage.setItem('userUsername', authData.username);
     localStorage.setItem('userFirstName', authData.firstName);
     localStorage.setItem('userLastName', authData.lastName);
-    localStorage.setItem('userRoles', JSON.stringify(authData.roles));
-    localStorage.setItem('userType', authData.userType);
+    localStorage.setItem('userRoles', JSON.stringify(authData.roles || []));
   }
 
   private clearAuthData(): void {
@@ -71,10 +84,10 @@ export class AuthService {
     localStorage.removeItem('tokenType');
     localStorage.removeItem('userId');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userUsername');
     localStorage.removeItem('userFirstName');
     localStorage.removeItem('userLastName');
     localStorage.removeItem('userRoles');
-    localStorage.removeItem('userType');
   }
 
   public getAuthData(): UserInfo | null {
@@ -87,10 +100,10 @@ export class AuthService {
 
     const userId = localStorage.getItem('userId');
     const email = localStorage.getItem('userEmail');
+    const username = localStorage.getItem('userUsername');
     const firstName = localStorage.getItem('userFirstName');
     const lastName = localStorage.getItem('userLastName');
     const roles = localStorage.getItem('userRoles');
-    const userType = localStorage.getItem('userType');
 
     if (!userId || !email) {
       return null;
@@ -99,10 +112,10 @@ export class AuthService {
     return {
       id: Number.parseInt(userId, 10),
       email,
+      username: username || email,
       firstName: firstName || '',
       lastName: lastName || '',
       roles: roles ? JSON.parse(roles) : [],
-      userType: userType || '',
     };
   }
 }
@@ -110,10 +123,10 @@ export class AuthService {
 export type UserInfo = {
   id: number;
   email: string;
+  username: string;
   firstName: string;
   lastName: string;
   roles: string[];
-  userType: string;
 };
 
 // Export convenience functions for easier usage
@@ -121,6 +134,6 @@ export const getAuthData = (): UserInfo | null => {
   return AuthService.getInstance().getAuthData();
 };
 
-export const logout = async (): Promise<void> => {
+export const logout = async (): Promise<LogoutResponse> => {
   return AuthService.getInstance().logout();
 };

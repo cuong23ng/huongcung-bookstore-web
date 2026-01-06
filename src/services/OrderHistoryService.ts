@@ -1,6 +1,7 @@
 import { ApiClient } from "@/integrations/ApiClient";
 import { AxiosInstance } from "axios";
 import { ApiResponse } from "@/models";
+import { API_CONFIG } from "@/config/api.config";
 
 export interface OrderHistoryItem {
   id: number;
@@ -84,16 +85,22 @@ export class OrderHistoryService {
 
   /**
    * Get order history with pagination
+   * TODO: Implement when order history endpoint is available in order-service
    */
   async getOrderHistory(page: number = 0, size: number = 20): Promise<OrderHistoryPage> {
     try {
-      const response = await this.apiFetcher.get<ApiResponse<OrderHistoryPage>>(
-        "/customer/orders",
-        {
-          params: { page, size },
-        }
-      );
-      return response.data?.data ?? {
+      // TODO: Update endpoint when order history API is implemented
+      // const response = await this.apiFetcher.get<ApiResponse<OrderHistoryPage>>(
+      //   API_CONFIG.endpoints.order.history,
+      //   {
+      //     params: { page, size },
+      //   }
+      // );
+      // return response.data?.data ?? { ... };
+      
+      // Temporary: Return empty result until endpoint is implemented
+      console.warn("Order history endpoint not yet implemented in order-service");
+      return {
         content: [],
         totalElements: 0,
         totalPages: 0,
@@ -113,16 +120,22 @@ export class OrderHistoryService {
 
   /**
    * Get order details by order ID
+   * TODO: Implement when order details endpoint is available in order-service
    */
   async getOrderDetails(orderId: number): Promise<OrderDetails> {
     try {
-      const response = await this.apiFetcher.get<ApiResponse<OrderDetails>>(
-        `/customer/orders/${orderId}`
-      );
-      if (!response.data?.data) {
-        throw new Error("Order not found");
-      }
-      return response.data.data;
+      // TODO: Update endpoint when order details API is implemented
+      // const response = await this.apiFetcher.get<ApiResponse<OrderDetails>>(
+      //   API_CONFIG.endpoints.order.orderDetails(orderId)
+      // );
+      // if (!response.data?.data) {
+      //   throw new Error("Order not found");
+      // }
+      // return response.data.data;
+      
+      // Temporary: Throw error until endpoint is implemented
+      console.warn("Order details endpoint not yet implemented in order-service");
+      throw new Error("Order details endpoint not yet implemented");
     } catch (error: any) {
       console.error("Failed to fetch order details:", error);
       if (error.response?.status === 401) {

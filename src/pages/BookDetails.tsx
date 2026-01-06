@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingCart, Plus, Minus, ShoppingBag, Book, BookOpen, Check } from "lucide-react";
+import { Heart, ShoppingCart, Plus, Minus, ShoppingBag, Book, BookOpen, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { useColor } from 'color-thief-react';
 import styles from '@/components/BookCard.module.css';
 import { ColorUtils } from "../utils/ColorUtils";
 import { useCart } from "@/contexts/CartContext";
-import { Book as BookModel } from "@/models";
+import { Book as BookModel, BookImage } from "@/models";
 
 // Mock data - trong thực tế sẽ fetch từ API
 const review_article = {
@@ -108,6 +108,8 @@ type BookDisplay = {
   translators: { name: string}[];
   price: string;
   description: string;
+  image: string;
+  images: BookImage[];
   details: {
     publisher: string;
     pages: string;
@@ -123,7 +125,6 @@ type BookDisplay = {
     coverType: string;
     specifications: string;
   } | null;
-  image?: string;
 };
 
 // Helper function to format date to YYYY-MM-DD format
@@ -176,6 +177,7 @@ export default function BookDetails() {
   const [bgColorScheme, setBgColorScheme] = useState(styles['background-color-olive']);
   const [textColorScheme, setTextColorScheme] = useState(styles['text-color-olive']);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [thumbnailScrollIndex, setThumbnailScrollIndex] = useState(0);
 
   // Get color from image - useColor hook must be at top level
   const { data: dominantHex } = useColor(book?.image || '', 'hex', { crossOrigin: 'anonymous', quality: 10 });
@@ -216,7 +218,8 @@ export default function BookDetails() {
               coverType: bookData.physicalBookInfo?.coverType || "",
               specifications: bookData.physicalBookInfo?.heightCm?.toString() + " x " + bookData.physicalBookInfo?.widthCm?.toString() + " x " + bookData.physicalBookInfo?.lengthCm?.toString() + " cm" || "",
             },
-            image: bookData.images?.[0]?.url,
+            image: bookData.images?.[0]?.url || "",
+            images: bookData.images || [],
           });
         } else {
           setBook(null);
@@ -397,30 +400,70 @@ export default function BookDetails() {
           {/* Book cover with thumbnails */}
           <div className="space-y-4 flex flex-col items-center justify-center">
             <div className={`w-full relative group/cover transition-transform duration-300 max-w-[390px]`} >
-              <img src={book.image} alt={book.title} className="w-full h-full object-contain transition-transform duration-300" />
+              <img 
+                src={book.images && book.images.length > 0 && book.images[selectedImage] 
+                  ? book.images[selectedImage].url 
+                  : book.image} 
+                alt={book.title} 
+                className="w-full h-full object-contain transition-transform duration-300" 
+              />
             </div>
             
             {/* Thumbnail images */}
-            <div className="grid grid-cols-4 gap-2 max-w-[240px]">
-              {[0, 1, 2, 3].map((index) => (
+            {book.images && book.images.length > 0 && (
+              <div className="relative w-full max-w-[390px] flex items-center justify-center">
+                {/* Left arrow button */}
+                {book.images.length > 4 && thumbnailScrollIndex > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-0 z-10 h-8 w-8 rounded-full bg-background/80 hover:bg-background shadow-md"
+                    onClick={() => setThumbnailScrollIndex(Math.max(0, thumbnailScrollIndex - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                )}
+                
+                {/* Thumbnail container */}
+                <div className="flex gap-2 overflow-hidden max-w-[240px]">
+                  {book.images
+                    .slice(thumbnailScrollIndex * 4, thumbnailScrollIndex * 4 + 4)
+                    .map((image, localIndex) => {
+                      const globalIndex = thumbnailScrollIndex * 4 + localIndex;
+                      return (
                 <button
-                  key={`thumbnail-${index}`}
+                          key={`thumbnail-${globalIndex}`}
                   type="button"
-                  className={`aspect-[5/7] cursor-pointer border transition-all duration-300 ${
-                    selectedImage === index 
+                          className={`flex-shrink-0 aspect-[5/7] w-[56px] cursor-pointer transition-all duration-300 ${
+                            selectedImage === globalIndex 
                       ? "opacity-100 brightness-100" 
                       : "opacity-70 brightness-85 hover:opacity-80 hover:brightness-100"
                   }`}
-                  onClick={() => setSelectedImage(index)}
+                          onClick={() => setSelectedImage(globalIndex)}
                 >
                   <div className="h-full flex items-center justify-center">
                     <div className={`w-full h-full flex items-center justify-center transition-all ${bgColorScheme}`}>
-                      <img src={book.image} alt={book.title} className="w-full h-full object-contain" />
+                              <img src={image.url} alt={image.altText || book.title} className="w-full h-full object-contain" />
                     </div>
                   </div>
                 </button>
-              ))}
+                      );
+                    })}
+                </div>
+                
+                {/* Right arrow button */}
+                {book.images.length > 4 && thumbnailScrollIndex < Math.ceil(book.images.length / 4) - 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 z-10 h-8 w-8 rounded-full bg-background/80 hover:bg-background shadow-md"
+                    onClick={() => setThumbnailScrollIndex(Math.min(Math.ceil(book.images.length / 4) - 1, thumbnailScrollIndex + 1))}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                )}
             </div>
+            )}
           </div>
 
           {/* Book info */}
@@ -649,45 +692,45 @@ export default function BookDetails() {
 
         {/* Book Review Section */}
         {bookModel?.review?.content && (
-          <div className="mb-20">
-            <h2 className="text-xl font-base tracking-wider uppercase mb-8 text-foreground/80">Giới thiệu sách</h2>
-            <Card className="border border-border overflow-hidden">
-              <CardContent className="p-8 md:p-12">
+        <div className="mb-20">
+          <h2 className="text-xl font-base tracking-wider uppercase mb-8 text-foreground/80">Giới thiệu sách</h2>
+          <Card className="border border-border overflow-hidden">
+            <CardContent className="p-8 md:p-12">
                 {bookModel.review.title && (
                   <h3 className="text-2xl font-semibold mb-6 text-foreground">
                     {bookModel.review.title}
                   </h3>
                 )}
-                <div className="prose prose-base max-w-none">
-                  <p className="text-md text-foreground/85 leading-relaxed whitespace-pre-line font-base">
+              <div className="prose prose-base max-w-none">
+                <p className="text-md text-foreground/85 leading-relaxed whitespace-pre-line font-base">
                     {bookModel.review.content}
-                  </p>
-                </div>
-                
+                </p>
+              </div>
+              
                 {bookModel.review.sources && bookModel.review.sources.length > 0 && (
-                  <div className="mt-12 pt-8 border-t border-border">
-                    <h4 className="text-sm font-normal mb-4 text-foreground/70 uppercase tracking-wider">
-                      Nguồn tham khảo
-                    </h4>
-                    <ul className="space-y-2">
+                <div className="mt-12 pt-8 border-t border-border">
+                  <h4 className="text-sm font-normal mb-4 text-foreground/70 uppercase tracking-wider">
+                    Nguồn tham khảo
+                  </h4>
+                  <ul className="space-y-2">
                       {bookModel.review.sources.map((source, index: number) => (
-                        <li key={`source-${index}`} className="text-sm">
-                          <a 
-                            href={source.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                      <li key={`source-${index}`} className="text-sm">
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
                             className="text-foreground/80 hover:text-foreground underline"
-                          >
+                        >
                             {source.title}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
         )}
 
         {/* Related Products */}
