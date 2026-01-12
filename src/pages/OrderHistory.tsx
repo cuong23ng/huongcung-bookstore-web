@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { OrderHistoryService, OrderHistoryItem, OrderHistoryPage } from "@/services/OrderHistoryService";
+import { OrderHistoryService, OrderHistoryItem, OrderHistoryResponse } from "@/services/OrderHistoryService";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Package } from "lucide-react";
 
@@ -27,9 +27,9 @@ export default function OrderHistory() {
     setLoading(true);
     try {
       const data = await orderHistoryService.getOrderHistory(page, 20);
-      setOrders(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
+      setOrders(data.orders);
+      setTotalPages(data.pagination.totalPages);
+      setTotalElements(data.pagination.totalResults);
     } catch (error: any) {
       console.error("Failed to load orders:", error);
       if (error.message === "Authentication required") {
@@ -96,9 +96,6 @@ export default function OrderHistory() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-2xl font-light tracking-wide">Lịch sử đơn hàng</h1>
-          <p className="text-muted-foreground mt-2">
-            Xem tất cả đơn hàng của bạn
-          </p>
         </div>
 
         {loading ? (

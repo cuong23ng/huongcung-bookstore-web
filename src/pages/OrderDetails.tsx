@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { OrderHistoryService, OrderDetails as OrderDetailsType } from "@/services/OrderHistoryService";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft, Package } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 const orderHistoryService = OrderHistoryService.getInstance();
 
@@ -19,7 +19,7 @@ export default function OrderDetails() {
 
   useEffect(() => {
     if (id) {
-      loadOrderDetails(parseInt(id));
+      loadOrderDetails(Number.parseInt(id));
     }
   }, [id]);
 
@@ -96,15 +96,6 @@ export default function OrderDetails() {
     return colorMap[status] || "bg-gray-100 text-gray-800";
   };
 
-  const parseShippingAddress = (addressJson?: string) => {
-    if (!addressJson) return null;
-    try {
-      return JSON.parse(addressJson);
-    } catch {
-      return null;
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -122,8 +113,6 @@ export default function OrderDetails() {
   if (!order) {
     return null;
   }
-
-  const shippingAddress = parseShippingAddress(order.shippingAddress);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -158,6 +147,22 @@ export default function OrderDetails() {
           </div>
         </div>
 
+        {/* Shipping Address */}
+        {order.shippingAddress && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-normal">Địa chỉ giao hàng</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                <p className="font-medium"><span className="text-muted-foreground">Người nhận hàng:</span> {order.shippingAddress.name}</p>
+                <p className="font-medium text-muted-foreground"><span className="text-muted-foreground">Số điện thoại:</span> {order.shippingAddress.phone}</p>
+                <p className="font-medium text-muted-foreground"><span className="text-muted-foreground">Địa chỉ:</span> {order.formattedShippingAddress}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid md:grid-cols-2 gap-6">
           {/* Order Items */}
           <Card>
@@ -170,7 +175,7 @@ export default function OrderDetails() {
                   <div className="flex-1">
                     <p className="font-medium">{item.bookTitle}</p>
                     <p className="text-sm text-muted-foreground">
-                      Mã sách: {item.bookCode}
+                      ISBN: {item.isbn}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Số lượng: {item.quantity} • {item.itemType === "PHYSICAL" ? "Sách in" : "Sách điện tử"}
@@ -178,9 +183,6 @@ export default function OrderDetails() {
                   </div>
                   <div className="text-right">
                     <p className="font-medium">{formatPrice(item.totalPrice)}₫</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatPrice(item.unitPrice)}₫/sản phẩm
-                    </p>
                   </div>
                 </div>
               ))}
@@ -224,79 +226,12 @@ export default function OrderDetails() {
 
               <div className="pt-4 border-t space-y-2">
                 <div>
-                  <p className="text-sm font-medium mb-1">Phương thức thanh toán:</p>
-                  <p className="text-sm text-muted-foreground">
-                    {order.paymentMethod === "COD" ? "Thanh toán khi nhận hàng" : order.paymentMethod}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">Trạng thái thanh toán:</p>
-                  <p className="text-sm text-muted-foreground">
-                    {order.paymentStatus === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}
-                  </p>
+                  <p className="text-sm font-medium mb-1">Phương thức thanh toán: {order.paymentMethod}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Shipping Address */}
-        {shippingAddress && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg font-normal">Địa chỉ giao hàng</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                <p className="font-medium">{shippingAddress.fullName}</p>
-                <p className="text-sm text-muted-foreground">{shippingAddress.phone}</p>
-                <p className="text-sm text-muted-foreground">{shippingAddress.address}</p>
-                {order.deliveryInfo && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    GHN Tracking: {order.deliveryInfo.ghnOrderCode || "Chưa có mã vận đơn"}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Delivery Info */}
-        {order.deliveryInfo && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-lg font-normal">Thông tin vận chuyển</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {order.deliveryInfo.provinceId && (
-                  <div>
-                    <p className="text-muted-foreground">Tỉnh/Thành phố:</p>
-                    <p className="font-medium">ID: {order.deliveryInfo.provinceId}</p>
-                  </div>
-                )}
-                {order.deliveryInfo.districtId && (
-                  <div>
-                    <p className="text-muted-foreground">Quận/Huyện:</p>
-                    <p className="font-medium">ID: {order.deliveryInfo.districtId}</p>
-                  </div>
-                )}
-                {order.deliveryInfo.wardCode && (
-                  <div>
-                    <p className="text-muted-foreground">Phường/Xã:</p>
-                    <p className="font-medium">{order.deliveryInfo.wardCode}</p>
-                  </div>
-                )}
-                {order.deliveryInfo.expectedDeliveryTime && (
-                  <div>
-                    <p className="text-muted-foreground">Thời gian dự kiến:</p>
-                    <p className="font-medium">{order.deliveryInfo.expectedDeliveryTime}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </main>
       <Footer />
     </div>

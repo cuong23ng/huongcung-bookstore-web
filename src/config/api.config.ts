@@ -14,9 +14,8 @@ export const API_CONFIG = {
     order: {
       checkout: '/order/checkout',
       calculateFee: '/order/calculate-fee',
-      // TODO: Add order history endpoints when available
-      // history: '/order/customer/orders',
-      // orderDetails: (id: number) => `/order/customer/orders/${id}`,
+      history: '/order/history',
+      orderDetails: (id: number) => `/order/history/${id}`,
     },
 
     payment: {

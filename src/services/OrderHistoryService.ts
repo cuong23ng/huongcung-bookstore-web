@@ -16,6 +16,7 @@ export interface OrderHistoryItem {
 export interface OrderItem {
   id: number;
   bookCode: string;
+  isbn: string;
   bookTitle: string;
   itemType: string;
   quantity: number;
@@ -23,18 +24,30 @@ export interface OrderItem {
   totalPrice: number;
 }
 
-export interface DeliveryInfo {
-  provinceId?: number;
-  districtId?: number;
-  wardCode?: string;
-  serviceTypeId?: number;
-  serviceId?: number;
-  expectedDeliveryTime?: string;
-  ghnOrderCode?: string;
-  weight?: number;
-  length?: number;
-  width?: number;
-  height?: number;
+export interface ProvinceDTO {
+  provinceId: string;
+  provinceName: string;
+}
+
+export interface DistrictDTO {
+  districtId: string;
+  districtName: string;
+}
+
+export interface WardDTO {
+  wardCode: string;
+  wardName: string;
+}
+
+export interface AddressDTO {
+  serviceTypeId?: string;
+  name: string;
+  phone: string;
+  address: string;
+  province?: ProvinceDTO;
+  district?: DistrictDTO;
+  ward?: WardDTO;
+  postalCode?: string;
 }
 
 export interface OrderDetails {
@@ -43,7 +56,6 @@ export interface OrderDetails {
   createdAt: string;
   updatedAt?: string;
   status: string;
-  paymentStatus: string;
   paymentMethod?: string;
   orderType: string;
   subtotal: number;
@@ -51,11 +63,24 @@ export interface OrderDetails {
   taxAmount: number;
   discountAmount: number;
   totalAmount: number;
-  shippingAddress?: string; // JSON string
-  billingAddress?: string; // JSON string
+  shippingAddress?: AddressDTO;
+  formattedShippingAddress?: string;
   notes?: string;
   items: OrderItem[];
-  deliveryInfo?: DeliveryInfo;
+}
+
+export interface PaginationInfo {
+  currentPage: number;
+  pageSize: number;
+  totalResults: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
+export interface OrderHistoryResponse {
+  orders: OrderHistoryItem[];
+  pagination: PaginationInfo;
 }
 
 export interface OrderHistoryPage {
@@ -85,30 +110,19 @@ export class OrderHistoryService {
 
   /**
    * Get order history with pagination
-   * TODO: Implement when order history endpoint is available in order-service
    */
-  async getOrderHistory(page: number = 0, size: number = 20): Promise<OrderHistoryPage> {
+  async getOrderHistory(page: number = 0, size: number = 20): Promise<OrderHistoryResponse> {
     try {
-      // TODO: Update endpoint when order history API is implemented
-      // const response = await this.apiFetcher.get<ApiResponse<OrderHistoryPage>>(
-      //   API_CONFIG.endpoints.order.history,
-      //   {
-      //     params: { page, size },
-      //   }
-      // );
-      // return response.data?.data ?? { ... };
-      
-      // Temporary: Return empty result until endpoint is implemented
-      console.warn("Order history endpoint not yet implemented in order-service");
-      return {
-        content: [],
-        totalElements: 0,
-        totalPages: 0,
-        size: 20,
-        number: 0,
-        first: true,
-        last: true,
-      };
+      const response = await this.apiFetcher.get<ApiResponse<OrderHistoryResponse>>(
+        API_CONFIG.endpoints.order.history,
+        {
+          params: { page, size },
+        }
+      );
+      if (!response.data?.data) {
+        throw new Error("Invalid response from server");
+      }
+      return response.data.data;
     } catch (error: any) {
       console.error("Failed to fetch order history:", error);
       if (error.response?.status === 401) {
@@ -120,22 +134,16 @@ export class OrderHistoryService {
 
   /**
    * Get order details by order ID
-   * TODO: Implement when order details endpoint is available in order-service
    */
   async getOrderDetails(orderId: number): Promise<OrderDetails> {
     try {
-      // TODO: Update endpoint when order details API is implemented
-      // const response = await this.apiFetcher.get<ApiResponse<OrderDetails>>(
-      //   API_CONFIG.endpoints.order.orderDetails(orderId)
-      // );
-      // if (!response.data?.data) {
-      //   throw new Error("Order not found");
-      // }
-      // return response.data.data;
-      
-      // Temporary: Throw error until endpoint is implemented
-      console.warn("Order details endpoint not yet implemented in order-service");
-      throw new Error("Order details endpoint not yet implemented");
+      const response = await this.apiFetcher.get<ApiResponse<OrderDetails>>(
+        API_CONFIG.endpoints.order.orderDetails(orderId)
+      );
+      if (!response.data?.data) {
+        throw new Error("Order not found");
+      }
+      return response.data.data;
     } catch (error: any) {
       console.error("Failed to fetch order details:", error);
       if (error.response?.status === 401) {
