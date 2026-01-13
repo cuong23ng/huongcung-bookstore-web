@@ -241,7 +241,6 @@ const SearchResults = () => {
                 <option value="price_asc">Giá: Thấp đến cao</option>
                 <option value="price_desc">Giá: Cao đến thấp</option>
                 <option value="date_desc">Mới nhất</option>
-                <option value="rating_desc">Đánh giá cao nhất</option>
               </select>
             </div>
 
@@ -368,7 +367,7 @@ const SearchResults = () => {
           </div>
         </div>
       </main>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

@@ -94,7 +94,7 @@ export default function OrderConfirmation() {
           </CardContent>
         </Card>
       </main>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }

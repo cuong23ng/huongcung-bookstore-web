@@ -231,14 +231,14 @@ const Auth = () => {
                   {isLoading ? "Đang xử lý..." : "Đăng nhập"}
                 </Button>
                 
-                <div className="relative my-4">
+                {/* <div className="relative my-4">
                   <Separator />
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
                     Hoặc
                   </span>
-                </div>
+                </div> */}
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -259,7 +259,7 @@ const Auth = () => {
                     <FacebookIcon />
                     Đăng nhập bằng Facebook
                   </Button>
-                </div>
+                </div> */}
               </form>
             </TabsContent>
             
@@ -363,14 +363,14 @@ const Auth = () => {
                   {isLoading ? "Đang xử lý..." : "Đăng ký"}
                 </Button>
                 
-                <div className="relative my-4">
+                {/* <div className="relative my-4">
                   <Separator />
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
                     Hoặc
                   </span>
-                </div>
+                </div> */}
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -391,7 +391,7 @@ const Auth = () => {
                     <FacebookIcon />
                     Đăng ký bằng Facebook
                   </Button>
-                </div>
+                </div> */}
               </form>
             </TabsContent>
           </Tabs>

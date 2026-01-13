@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PaymentSuccess() {
@@ -91,83 +91,88 @@ export default function PaymentSuccess() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-16 max-w-2xl">
-        <Card>
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+        <Card className={paymentStatus === "success" ? "border-2 border-green-500" : paymentStatus === "failed" ? "border-2 border-red-500" : "border-2 border-yellow-500"}>
           <CardHeader className="text-center">
-            {paymentStatus === "success" ? (
-              <div className="flex flex-col items-center gap-4">
-                <div className="rounded-full bg-green-100 p-4">
-                  <CheckCircle className="h-16 w-16 text-green-600" />
-                </div>
-                <CardTitle className="text-2xl">Thanh toán thành công!</CardTitle>
-              </div>
-            ) : paymentStatus === "failed" ? (
-              <div className="flex flex-col items-center gap-4">
-                <div className="rounded-full bg-red-100 p-4">
-                  <XCircle className="h-16 w-16 text-red-600" />
-                </div>
-                <CardTitle className="text-2xl">Thanh toán thất bại</CardTitle>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-4">
-                <div className="rounded-full bg-yellow-100 p-4">
-                  <Loader2 className="h-16 w-16 text-yellow-600 animate-spin" />
-                </div>
-                <CardTitle className="text-2xl">Đang xử lý</CardTitle>
-              </div>
-            )}
+            <div className="flex justify-center mb-4">
+              {paymentStatus === "success" ? (
+                <CheckCircle2 className="h-16 w-16 text-green-500" />
+              ) : paymentStatus === "failed" ? (
+                <XCircle className="h-16 w-16 text-red-500" />
+              ) : (
+                <Loader2 className="h-16 w-16 text-yellow-500 animate-spin" />
+              )}
+            </div>
+            <CardTitle className="text-2xl font-light tracking-wide">
+              {paymentStatus === "success" 
+                ? "Thanh toán thành công!" 
+                : paymentStatus === "failed" 
+                ? "Thanh toán thất bại"
+                : "Đang xử lý"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center space-y-2">
-              <p className="text-muted-foreground">{message}</p>
+              <p className="text-muted-foreground">
+                {paymentStatus === "success" 
+                  ? "Cảm ơn bạn đã thanh toán tại Huong Cung Bookstore"
+                  : message}
+              </p>
               {orderNumber && (
-                <p className="text-sm text-muted-foreground">
-                  Mã đơn hàng: <span className="font-medium text-foreground">{orderNumber}</span>
-                </p>
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Mã đơn hàng của bạn là:
+                  </p>
+                  <p className="text-2xl font-medium tracking-wider">
+                    {orderNumber}
+                  </p>
+                </>
               )}
             </div>
 
             {paymentStatus === "success" && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-800">
-                  Đơn hàng của bạn đã được xác nhận và sẽ được xử lý trong thời gian sớm nhất.
-                  Chúng tôi sẽ gửi email xác nhận đến địa chỉ email bạn đã cung cấp.
-                </p>
+              <div className="bg-muted/50 p-4 rounded-md space-y-2">
+                <p className="text-sm font-medium">Lưu ý:</p>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Chúng tôi sẽ gửi email xác nhận đơn hàng đến địa chỉ email của bạn.</li>
+                  <li>Đơn hàng sẽ được xử lý trong vòng 1-2 ngày làm việc.</li>
+                  <li>Bạn có thể theo dõi đơn hàng trong mục "Lịch sử đơn hàng".</li>
+                </ul>
               </div>
             )}
 
             {paymentStatus === "failed" && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-800">
-                  Vui lòng thử lại thanh toán hoặc chọn phương thức thanh toán khác.
-                  Nếu vấn đề vẫn tiếp tục, vui lòng liên hệ với bộ phận hỗ trợ khách hàng.
-                </p>
+              <div className="bg-muted/50 p-4 rounded-md space-y-2">
+                <p className="text-sm font-medium">Lưu ý:</p>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>{message}</li>
+                  <li>Vui lòng thử lại thanh toán hoặc chọn phương thức thanh toán khác.</li>
+                  <li>Nếu vấn đề vẫn tiếp tục, vui lòng liên hệ với bộ phận hỗ trợ khách hàng.</li>
+                </ul>
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="flex gap-4 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleBackToHome}
+                className="flex-1"
+              >
+                {paymentStatus === "success" ? "Tiếp tục mua sắm" : "Về trang chủ"}
+              </Button>
               {paymentStatus === "success" && (
                 <Button
                   onClick={handleViewOrder}
                   className="flex-1"
-                  size="lg"
                 >
-                  Xem đơn hàng
+                  Xem lịch sử đơn hàng
                 </Button>
               )}
-              <Button
-                onClick={handleBackToHome}
-                variant={paymentStatus === "success" ? "outline" : "default"}
-                className="flex-1"
-                size="lg"
-              >
-                Về trang chủ
-              </Button>
             </div>
           </CardContent>
         </Card>
       </main>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }

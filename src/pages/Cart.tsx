@@ -117,7 +117,7 @@ export default function Cart() {
           </div>
         </div>
       </main>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }

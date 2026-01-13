@@ -1,4 +1,5 @@
-import { BookOpen, Home, Star, TrendingUp, Heart, Download, Grid3x3 } from "lucide-react";
+import { Search, Home, Star, ChartNoAxesGantt, Heart, BookUser } from "lucide-react";
+import styles from './BookCard.module.css';
 import { NavLink } from "react-router-dom";
 
 import {
@@ -14,12 +15,11 @@ import {
 } from "./ui/sidebar";
 
 const items = [
-  { title: "Trang chủ", url: "/", icon: Home },
-  { title: "Sách mới", url: "/new", icon: Star },
-  { title: "Best Sellers", url: "/bestsellers", icon: TrendingUp },
-  { title: "E-books", url: "/ebooks", icon: Download },
-  { title: "Yêu thích", url: "/favorites", icon: Heart },
-  { title: "Danh mục", url: "/categories", icon: Grid3x3 },
+  { title: "Trang chủ", url: "/", icon: Home, style: styles['background-color-navy'] },
+  { title: "Tìm kiếm", url: "/search", icon: Search, style: styles['background-color-rose'] },
+  { title: "Tác giả", url: "/authors", icon: BookUser, style: styles['background-color-terracotta'] },
+  { title: "Yêu thích", url: "/favorites", icon: Heart, style: styles['background-color-teal'] },
+  { title: "Danh mục", url: "/categories", icon: ChartNoAxesGantt, style: styles['background-color-brown'] },
 ];
 
 export function AppSidebar() {
@@ -27,12 +27,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent>
+      <SidebarContent className="mt-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs uppercase tracking-wider">
             Khám phá
           </SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="mt-8">
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
