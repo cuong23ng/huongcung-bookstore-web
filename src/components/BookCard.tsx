@@ -11,7 +11,7 @@ import { BookService } from "../services/BookService";
 interface BookCardProps {
   id: string;
   title: string;
-  authors: { name: string }[];
+  authors: { name: string, id: number }[];
   price: string;
   originalPrice?: string;
   colorScheme?: string;
@@ -183,7 +183,13 @@ export const BookCard = ({
           </Link>
           <p className="text-xs text-muted-foreground mt-1 cursor-pointer">{authors.map((author, index) => (
             <>
-              <span key={author.name} className={`text-xs transition-colors duration-300 cursor-pointer mt-1`}>{author.name}</span>
+              <span 
+                key={author.name} 
+                className={`text-xs transition-colors duration-300 cursor-pointer mt-1`}
+                onClick={() => navigate(`/authors/${author.id}`)}
+              >
+                {author.name}
+              </span>
               {index < authors.length - 1 && ", "}
             </>
           ))}</p>

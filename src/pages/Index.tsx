@@ -2,31 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { BestSellers, type BestSellerItem } from "@/components/BestSellers";
 import { BookService } from "@/services/BookService";
+import { DisplayUtils } from "@/utils/DisplayUtils";
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [bestSellerItems, setBestSellerItems] = useState<BestSellerItem[]>([]);
-
-  const formatPrice = (price: number): string => {
-    return new Intl.NumberFormat("vi-VN").format(price);
-  };
-
-  const getDisplayPrice = (physicalPrice: number | null, ebookPrice: number | null): string => {
-    if (physicalPrice === null && ebookPrice === null) {
-      return "Liên hệ";
-    }
-    
-    if (physicalPrice === null && ebookPrice !== null) {
-      return formatPrice(ebookPrice);
-    }
-    
-    if (ebookPrice === null && physicalPrice !== null) {
-      return formatPrice(physicalPrice);
-    }
-    
-    const minPrice = Math.min(physicalPrice, ebookPrice);
-    return `Chỉ từ ${formatPrice(minPrice)}`;
-  };
 
   useEffect(() => {
     const load = async () => {
@@ -34,19 +14,18 @@ const Index = () => {
         const bookService = BookService.getInstance();
         const bookPage = await bookService.getAllBooks(1, 20);
         const mapped: BestSellerItem[] = bookPage.books.map((b, idx) => {
-          const authors = b.authors?.map(author => ({ name: author.name })) || [];
+          const authors = b.authors?.map(author => ({ name: author.name, id: author.id })) || [];
           return {
             id: b.code,
             title: b.title,
             authors,
-            price: getDisplayPrice(b.physicalPrice, b.ebookPrice),
+            price: DisplayUtils.formatPrice(b.physicalPrice, b.ebookPrice),
             image: b.coverUrl,
           };
         });
         setBestSellerItems(mapped);
       } catch (error) {
         console.error("Failed to load books:", error);
-        // If API fails, BestSellers component will show fallback mock data
         setBestSellerItems([]);
       } finally {
         setIsLoading(false);

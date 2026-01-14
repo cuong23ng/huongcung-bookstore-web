@@ -3,7 +3,7 @@ import { BookCard } from "./BookCard";
 export type BestSellerItem = {
   id: string;
   title: string;
-  authors: { name: string }[];
+  authors: { name: string, id: number }[];
   price: string;
   originalPrice?: string;
   colorScheme?: string;

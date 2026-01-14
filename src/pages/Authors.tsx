@@ -4,51 +4,58 @@ import { useNavigate } from "react-router-dom";
 import { AuthorService } from "@/services/AuthorService";
 import React from "react";
 
-const authors = [
+const mockAuthors = [
   {
-    id: "nguyen-nhat-anh",
+    id: 1,
     name: "Nguyễn Nhật Ánh",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
   },
   {
-    id: "nam-cao",
+    id: 2,
     name: "Nam Cao",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
   },
   {
-    id: "to-hoai",
+    id: 3,
     name: "Tô Hoài",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
   },
   {
-    id: "vu-trong-phung",
+    id: 4,
     name: "Vũ Trọng Phụng",
     avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop&crop=face",
   },
   {
-    id: "ngo-tat-to",
+    id: 5,
     name: "Ngô Tất Tố",
     avatar: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=200&h=200&fit=crop&crop=face",
   },
   {
-    id: "xuan-dieu",
+    id: 6,
     name: "Xuân Diệu",
     avatar: "https://images.unsplash.com/photo-1463453091185-61582044d556?w=200&h=200&fit=crop&crop=face",
   },
   {
-    id: "ho-anh-thai",
+    id: 7,
     name: "Hồ Anh Thái",
     avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face",
   },
   {
-    id: "nguyen-huy-thiep",
+    id: 8,
     name: "Nguyễn Huy Thiệp",
     avatar: "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=200&h=200&fit=crop&crop=face",
   },
 ];
 
+interface AuthorItem {
+  id: number;
+  name: string;
+  avatar: string;
+}
+
 const Authors = () => {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [authors, setAuthors] = React.useState<AuthorItem[]>([]);
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -60,10 +67,12 @@ const Authors = () => {
         const fetchedAuthors = authorPage.authors.map(author => ({
           id: author.id,
           name: author.name,
-          avatar: author.image.url || '',
+          avatar: author.image.url || "",
         }));
+        setAuthors(fetchedAuthors);
       } catch (error) {
         console.error("Failed to load authors:", error);
+        setAuthors(mockAuthors);
       } finally {
         setIsLoading(false);
       }
@@ -98,7 +107,7 @@ const Authors = () => {
               onClick={() => navigate(`/authors/${author.id}`)}
             >
               <Avatar className="h-24 w-24 md:h-28 md:w-28 transition-transform duration-300 group-hover:scale-105 ring-2 ring-transparent group-hover:ring-primary">
-                <AvatarImage src={author.avatar} alt={author.name} />
+                <AvatarImage src={author.avatar} alt={author.name} className="object-cover"/>
                 <AvatarFallback className="text-lg">
                   {author.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                 </AvatarFallback>

@@ -77,6 +77,7 @@ export interface Book {
 
 export interface AuthorFrontPageDTO {
   name: string;
+  id: number;
 }
 
 export interface BookFrontPageDTO {

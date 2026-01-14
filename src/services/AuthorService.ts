@@ -1,4 +1,4 @@
-import { Author, AuthorPage } from '../models/Author';
+import { Author, AuthorPage, AuthorWithBooks } from '../models/Author';
 import { ApiClient } from '@/integrations/ApiClient';
 import { AxiosInstance } from 'axios';
 import { ApiResponse } from '@/models';
@@ -22,9 +22,9 @@ export class AuthorService {
     return response.data.data;
   }
 
-  async getBooksByAuthor(authorId: number, page: number = 0, size: number = 20): Promise<AuthorPage> {
-    const response = await this.apiFetcher.get<ApiResponse<AuthorPage>>(
-      `${API_CONFIG.endpoints.author.authors}/${authorId}/books`,
+  async getBooksByAuthor(authorId: number, page: number = 0, size: number = 20): Promise<AuthorWithBooks> {
+    const response = await this.apiFetcher.get<ApiResponse<AuthorWithBooks>>(
+      `${API_CONFIG.endpoints.author.authors}/${authorId}`,
       {
         params: { page, size },
       }

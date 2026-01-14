@@ -14,7 +14,7 @@ export const API_CONFIG = {
     },
 
     author: {
-      authors: '/catalog/authors',
+      authors: '/catalog/books/authors',
     },
 
     order: {
