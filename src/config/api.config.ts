@@ -1,3 +1,5 @@
+import { au } from "vitest/dist/chunks/reporters.nr4dxCkA.js";
+
 export const API_CONFIG = {
   baseURL: import.meta.env.MODE === 'development'
     ? '/api'
@@ -9,6 +11,10 @@ export const API_CONFIG = {
       bookDetails: (code: string) => `/catalog/books/${code}`,
       bookForOrder: (code: string) => `/catalog/books/order/physical?code=${code}`,
       suggestions: '/catalog/books/suggest',
+    },
+
+    author: {
+      authors: '/catalog/authors',
     },
 
     order: {

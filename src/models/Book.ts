@@ -1,3 +1,5 @@
+import { PaginationInfo } from './PaginationInfo';
+
 export interface BookImage {
   url: string;
   altText?: string;
@@ -92,13 +94,6 @@ export interface BookPage {
   executionTimeMs?: number;
 }
 
-export interface PaginationInfo {
-  currentPage: number;
-  pageSize: number;
-  totalResults: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
+
 
 

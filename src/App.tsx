@@ -18,6 +18,8 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import OrderHistory from "./pages/OrderHistory";
 import OrderDetails from "./pages/OrderDetails";
+import Authors from "./pages/Authors";
+import AuthorDetails from "./pages/AuthorDetails";
 //import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +44,8 @@ const AppContent = () => {
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/orders" element={<OrderHistory />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
+            <Route path="/authors" element={<Authors />} />
+            <Route path="/authors/:id" element={<AuthorDetails />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             {/* <Route path="*" element={<NotFound />} /> */}
           </Routes>

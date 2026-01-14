@@ -13,26 +13,6 @@ import { ColorUtils } from "../utils/ColorUtils";
 import { useCart } from "@/contexts/CartContext";
 import { Book as BookModel, BookImage } from "@/models";
 
-// Mock data - trong thực tế sẽ fetch từ API
-const review_article = {
-  title: "Nguyễn Nhật Ánh và những câu chuyện tuổi thơ đầy cảm xúc",
-  content: `Vapeur là một tác phẩm văn học xuất sắc, với cách kể chuyện tinh tế và sâu sắc. Tác giả đã khéo léo đan xen những cảm xúc phức tạp của con người vào từng trang sách, tạo nên một trải nghiệm đọc đầy ấn tượng. Đọc Vapeur, người đọc như được đắm mình vào một không gian nghệ thuật đầy mê hoặc, nơi mà ranh giới giữa hiện thực và ảo ảnh trở nên mờ nhạt.
-
-Tác giả đã khéo léo sử dụng ngôn ngữ văn chương để vẽ nên những bức tranh tâm hồn đầy màu sắc, từ những khoảnh khắc vui sướng tột cùng đến những giây phút tuyệt vọng sâu thẳm nhất. Những nhân vật trong tác phẩm không chỉ là những hình tượng trên giấy, mà còn là những con người sống động với đầy đủ cảm xúc, suy nghĩ và hoài bão. Họ khiến người đọc phải suy ngẫm về chính cuộc đời mình, về những lựa chọn đã qua và những con đường còn phía trước.
-
-Điểm đặc biệt của Vapeur nằm ở cách tác giả xử lý thời gian trong tác phẩm. Thay vì theo một mạch tuyến tính, câu chuyện được kể lại qua những mảnh ghép ký ức, tạo nên một bức tranh toàn cảnh về cuộc đời nhân vật chính. Kỹ thuật này không chỉ giúp làm phong phú thêm cấu trúc của tác phẩm, mà còn phản ánh chính bản chất của ký ức con người - luôn phân mảnh, đan xen và đầy những cảm xúc mâu thuẫn.
-
-Trong bối cảnh văn học đương đại đang dần chuyển hướng sang những câu chuyện mang tính giải trí cao, Vapeur xuất hiện như một luồng gió mới, mang đến cho độc giả những trải nghiệm văn chương sâu sắc và có chiều sâu tư tưởng. Tác phẩm không đơn thuần là một câu chuyện được kể lại, mà là một hành trình khám phá tâm hồn con người qua lăng kính của nghệ thuật.
-
-Ngôn ngữ trong tác phẩm vừa giản dị vừa đầy chất thơ, tạo nên một nhịp điệu đọc vừa êm dịu vừa sâu lắng. Mỗi câu chữ đều được chọn lọc kỹ lưỡng, không một từ ngữ nào thừa, không một chi tiết nào xuất hiện một cách vô nghĩa. Đây chính là dấu ấn của một tác giả thực sự tâm huyết với nghề viết. Tác phẩm cũng đặt ra nhiều câu hỏi triết học về ý nghĩa của nghệ thuật, về mối quan hệ giữa con người với con người, và về vị trí của cá nhân trong xã hội hiện đại.
-
-Vapeur xứng đáng là một trong những tác phẩm văn học đáng chú ý nhất năm nay. Đây là cuốn sách dành cho những ai yêu thích văn chương nghệ thuật, những ai đang tìm kiếm một trải nghiệm đọc sâu sắc và đầy cảm xúc.`,
-  sources: [
-    { name: "Tuổi Trẻ Online", url: "https://tuoitre.vn/review-nna" },
-    { name: "Báo Văn hóa", url: "https://vanhoa.vn/nguyen-nhat-anh-review" }
-  ]
-};
-
 const bookData: Record<string, any> = {
   "vapeur": {
     title: "Vapeur",
